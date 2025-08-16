@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { PlusCircle } from "lucide-react"
+import { Eye, EyeOff, PlusCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,7 @@ const getRoleBadgeVariant = (role: string) => {
 export default function UsersPage() {
   const [users, setUsers] = useState(initialUsers);
   const [open, setOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAddUser = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,6 +63,7 @@ export default function UsersPage() {
     };
     setUsers([...users, newUser]);
     setOpen(false);
+    e.currentTarget.reset();
   }
 
   return (
@@ -126,6 +128,24 @@ export default function UsersPage() {
                 Correo
               </Label>
               <Input id="email" name="email" type="email" className="col-span-3" required />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Contraseña
+              </Label>
+              <div className="relative col-span-3">
+                <Input id="password" name="password" type={showPassword ? "text" : "password"} required />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0 h-full px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <span className="sr-only">{showPassword ? "Ocultar" : "Mostrar"} contraseña</span>
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="role" className="text-right">
