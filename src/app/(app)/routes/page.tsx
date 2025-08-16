@@ -11,10 +11,10 @@ const collectors = [
     avatar: 'CR',
     progress: 75, 
     route: [
-      { name: 'Alice Johnson', address: '1234 Elm St', status: 'Paid' },
-      { name: 'Robert Brown', address: '5678 Oak St', status: 'Paid' },
-      { name: 'Emily Davis', address: '9101 Pine St', status: 'Pending' },
-      { name: 'Michael Wilson', address: '1213 Maple St', status: 'No answer' },
+      { name: 'Alice Johnson', address: '1234 Elm St', status: 'Pagado' },
+      { name: 'Robert Brown', address: '5678 Oak St', status: 'Pagado' },
+      { name: 'Emily Davis', address: '9101 Pine St', status: 'Pendiente' },
+      { name: 'Michael Wilson', address: '1213 Maple St', status: 'No responde' },
     ] 
   },
   { 
@@ -22,11 +22,11 @@ const collectors = [
     avatar: 'MS',
     progress: 40,
     route: [
-      { name: 'David Williams', address: '2122 Cedar St', status: 'Paid' },
-      { name: 'Jessica Garcia', address: '3334 Walnut St', status: 'Pending' },
-      { name: 'James Martinez', address: '4546 Chestnut St', status: 'Pending' },
-      { name: 'Linda Hernandez', address: '5758 Poplar St', status: 'Pending' },
-      { name: 'Joseph Clark', address: '6960 Spruce St', status: 'Pending' },
+      { name: 'David Williams', address: '2122 Cedar St', status: 'Pagado' },
+      { name: 'Jessica Garcia', address: '3334 Walnut St', status: 'Pendiente' },
+      { name: 'James Martinez', address: '4546 Chestnut St', status: 'Pendiente' },
+      { name: 'Linda Hernandez', address: '5758 Poplar St', status: 'Pendiente' },
+      { name: 'Joseph Clark', address: '6960 Spruce St', status: 'Pendiente' },
     ]
   },
 ];
@@ -35,9 +35,9 @@ export default function RoutesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Daily Routes</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Rutas Diarias</h2>
         <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Assign New Route
+          <PlusCircle className="mr-2 h-4 w-4" /> Asignar Nueva Ruta
         </Button>
       </div>
 
@@ -52,21 +52,21 @@ export default function RoutesPage() {
                 </Avatar>
                 <div>
                   <CardTitle>{collector.name}</CardTitle>
-                  <CardDescription>Collection Manager</CardDescription>
+                  <CardDescription>Gestor de Cobros</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">Route Progress</span>
+                  <span className="text-sm font-medium">Progreso de la Ruta</span>
                   <span className="text-sm text-muted-foreground">{collector.progress}%</span>
                 </div>
                 <Progress value={collector.progress} />
               </div>
               <Separator />
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2"><Map className="w-4 h-4 text-muted-foreground" /> Route for Today</h4>
+                <h4 className="text-sm font-semibold flex items-center gap-2"><Map className="w-4 h-4 text-muted-foreground" /> Ruta para Hoy</h4>
                 <ul className="space-y-3">
                   {collector.route.map((stop, index) => (
                     <li key={index} className="flex items-start gap-4">

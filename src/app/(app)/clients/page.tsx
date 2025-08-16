@@ -35,30 +35,30 @@ export default function ClientsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Client Registry</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Registro de Clientes</h2>
         <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Register New Client
+          <PlusCircle className="mr-2 h-4 w-4" /> Registrar Nuevo Cliente
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Clients</CardTitle>
+          <CardTitle>Todos los Clientes</CardTitle>
           <CardDescription>
-            A list of all registered clients in RapiGestion.
+            Una lista de todos los clientes registrados en RapiGestion.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Client ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Address</TableHead>
+                <TableHead>ID de Cliente</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Correo</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead>Dirección</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">Acciones</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -79,10 +79,10 @@ export default function ClientsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Client</DropdownMenuItem>
-                        <DropdownMenuItem>View Guarantees</DropdownMenuItem>
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
+                        <DropdownMenuItem>Editar Cliente</DropdownMenuItem>
+                        <DropdownMenuItem>Ver Garantías</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

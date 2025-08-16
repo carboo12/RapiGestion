@@ -5,11 +5,11 @@ import { LayoutDashboard, HandCoins, Users, MapPin, Settings, CreditCard } from 
 import Link from 'next/link';
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/credits', icon: CreditCard, label: 'Credits' },
-  { href: '/clients', icon: Users, label: 'Clients' },
-  { href: '/routes', icon: MapPin, label: 'Routes' },
-  { href: '/settings', icon: Settings, label: 'Configuration' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Panel de Control' },
+  { href: '/credits', icon: CreditCard, label: 'Créditos' },
+  { href: '/clients', icon: Users, label: 'Clientes' },
+  { href: '/routes', icon: MapPin, label: 'Rutas' },
+  { href: '/settings', icon: Settings, label: 'Configuración' },
 ];
 
 export function MainNav() {
