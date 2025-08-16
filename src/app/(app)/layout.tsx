@@ -1,5 +1,5 @@
 'use client';
-import { MainNav } from '@/components/main-nav';
+import { MainNav, MobileNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
 import {
   Sidebar,
@@ -13,8 +13,10 @@ import {
 import { HandCoins } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const isMobile = useIsMobile();
   return (
     <SidebarProvider>
         <Sidebar className='bg-background border-r' collapsible="icon">
@@ -41,11 +43,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="flex items-center gap-4">
                   <SidebarTrigger className="md:hidden"/>
                 </div>
+                {!isMobile && <div className="hidden md:block" />}
                 <UserNav />
             </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto mb-16 md:mb-0">
                 {children}
             </main>
+            {isMobile && <MobileNav />}
           </div>
         </SidebarInset>
     </SidebarProvider>

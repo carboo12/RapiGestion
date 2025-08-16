@@ -1,107 +1,93 @@
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { DollarSign, Users, PiggyBank, AlertTriangle } from "lucide-react"
+import { Separator } from "@/components/ui/separator";
+import { BadgeCheck, Ban } from "lucide-react"
+
+const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 512 512"
+    fill="currentColor"
+  >
+    <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 202.6c-25.2 0-45.7 20.5-45.7 45.7s20.5 45.7 45.7 45.7s45.7-20.5 45.7-45.7s-20.5-45.7-45.7-45.7zM342.2 202.6c-25.2 0-45.7 20.5-45.7 45.7s20.5 45.7 45.7 45.7s45.7-20.5 45.7-45.7s-20.5-45.7-45.7-45.7zM256 395.4c-70.1 0-131.2-44.1-158.4-107.9C121.2 232.5 182.2 192 256 192s134.8 40.5 158.4 105.5c-27.2 63.8-88.3 107.9-158.4 107.9z" />
+  </svg>
+);
+
+const CobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z" />
+    <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+    <path d="m15 13 2 2 4-4" />
+  </svg>
+);
+
+const NoCobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="8" r="4" />
+    <path d="M6 18h2c.9 0 1.8-.4 2.4-1" />
+    <path d="M19.4 17c.4-.6.6-1.2.6-1.9v-2.1c0-1-.8-1.9-1.8-1.9H16" />
+    <path d="M16 12h2a2 2 0 0 1 2 2v2" />
+    <path d="M22 18h-2" />
+  </svg>
+);
+
 
 export default function DashboardPage() {
-  const transactions = [
-    { id: 1, client: "John Doe", type: "Pago", amount: "C$ 500.00", date: "2024-05-20", status: "Completado" },
-    { id: 2, client: "Jane Smith", type: "Desembolso", amount: "$ 100.00", date: "2024-05-20", status: "Completado" },
-    { id: 3, client: "Peter Jones", type: "Pago", amount: "C$ 1,200.00", date: "2024-05-19", status: "Completado" },
-    { id: 4, client: "Mary Johnson", type: "Pago", amount: "C$ 350.00", date: "2024-05-19", status: "Pendiente" },
-    { id: 5, client: "David Williams", type: "Desembolso", amount: "$ 250.00", date: "2024-05-18", status: "Completado" },
-  ]
-  
   return (
-    <div className="flex-1 space-y-4">
-       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
+    <div className="flex-1 space-y-4 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-xl font-bold tracking-tight text-primary">Recuperacion</h2>
+        <span className="text-sm text-primary">v 10.1.1</span>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor Total Prestado</CardTitle>
-            <PiggyBank className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">C$ 1,250,000.00</div>
-            <p className="text-xs text-muted-foreground">+5.2% desde el mes pasado</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo Pendiente</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">C$ 450,000.00</div>
-            <p className="text-xs text-muted-foreground">+12.1% desde el mes pasado</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+150</div>
-            <p className="text-xs text-muted-foreground">+10 desde el mes pasado</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Créditos Vencidos</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">2 nuevos desde ayer</p>
-          </CardContent>
-        </Card>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Transacciones Recientes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.map(tx => (
-                <TableRow key={tx.id}>
-                  <TableCell className="font-medium">{tx.client}</TableCell>
-                  <TableCell>{tx.type}</TableCell>
-                   <TableCell>
-                    <Badge variant={tx.status === 'Completado' ? 'default' : 'secondary'} className={tx.status === 'Completado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>{tx.status}</Badge>
-                  </TableCell>
-                  <TableCell>{tx.date}</TableCell>
-                  <TableCell className="text-right">{tx.amount}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      
+      <Card className="border-primary border-2 rounded-2xl shadow-lg">
+        <CardContent className="flex flex-col items-center text-center p-6 space-y-3">
+          <CustomLogo className="w-20 h-20 text-blue-800" />
+          <h3 className="text-2xl font-bold text-primary">HENRY CONTRERAS</h3>
+          <p className="text-muted-foreground">Que tengas un buen día!</p>
+          <p className="text-sm text-muted-foreground">16/8/2025</p>
+          <h4 className="text-xl font-semibold text-blue-800">Recuperación</h4>
+          <p className="text-3xl font-bold text-blue-800">C$ 11,595.00</p>
+          <Separator className="w-full" />
+          <p className="text-lg font-semibold">Total de cobros: 15</p>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="border-primary border-2 rounded-2xl">
+          <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center">
+            <CobradosIcon className="w-12 h-12 text-primary" />
+            <p className="font-semibold text-primary">Cobrados</p>
+          </CardContent>
+        </Card>
+        <Card className="border-destructive border-2 rounded-2xl">
+          <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center">
+            <NoCobradosIcon className="w-12 h-12 text-destructive" />
+            <p className="font-semibold text-destructive">No Cobrados</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
