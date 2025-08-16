@@ -11,13 +11,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { HandCoins, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  }
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    router.push('/dashboard');
   }
 
   return (
@@ -33,7 +40,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
+          <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Correo</Label>
               <Input
@@ -70,7 +77,7 @@ export default function LoginPage() {
             <Button type="submit" className="w-full">
               Iniciar Sesión
             </Button>
-          </div>
+          </form>
           <div className="mt-4 text-center text-sm">
             ¿No tienes una cuenta?{" "}
             <Link href="#" className="underline">
