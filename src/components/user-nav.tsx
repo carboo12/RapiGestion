@@ -38,7 +38,7 @@ export function UserNav() {
             <User className="mr-2 h-4 w-4" />
             <span>Perfil</span>
           </DropdownMenuItem>
-          <Link href="/settings">
+          <Link href="/users">
             <DropdownMenuItem>
               <Users className="mr-2 h-4 w-4" />
               <span>Usuarios</span>
