@@ -10,7 +10,6 @@ const navItems = [
   { href: '/clients', icon: Users, label: 'Clientes' },
   { href: '/credits', icon: CreditCard, label: 'Creditos' },
   { href: '/routes', icon: Map, label: 'Rutas' },
-  { href: '/settings', icon: Settings, label: 'Configura...' },
 ];
 
 
