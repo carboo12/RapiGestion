@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText } from "lucide-react"
+import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText, Trash2, Users, Handshake, Gem } from "lucide-react"
 import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
@@ -40,7 +40,24 @@ import { nicaraguaData } from "@/lib/nicaragua-data";
 import { app } from "@/lib/firebase";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
+
+interface Reference {
+  id: string;
+  nombreCompleto: string;
+  telefono: string;
+  direccion: string;
+  parentesco: string;
+}
+
+interface Guarantee {
+  id: string;
+  tipoGarantia: string;
+  valor: string;
+  detalle: string;
+}
 
 interface Client {
   id: string;
@@ -62,6 +79,8 @@ interface Client {
   centroTrabajo?: string;
   direccionTrabajo?: string;
   createdBy?: string;
+  references?: Reference[];
+  guarantees?: Guarantee[];
 }
 
 interface Municipality {
@@ -90,6 +109,9 @@ export default function ClientsPage() {
   });
   const [communities, setCommunities] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const [references, setReferences] = useState<Reference[]>([]);
+  const [guarantees, setGuarantees] = useState<Guarantee[]>([]);
   
   const { toast } = useToast();
 
@@ -119,6 +141,11 @@ export default function ClientsPage() {
       setCommunities(municipality ? municipality.comunidades : []);
 
       setLocation(editingClient.location || null);
+      setReferences(editingClient.references || []);
+      setGuarantees(editingClient.guarantees || []);
+    } else {
+      setReferences([]);
+      setGuarantees([]);
     }
   }, [editingClient])
   
@@ -240,6 +267,8 @@ export default function ClientsPage() {
       centroTrabajo: formData.get('centro-trabajo') as string,
       direccionTrabajo: formData.get('direccion-trabajo') as string,
       createdBy: isEditing ? editingClient?.createdBy : user.uid,
+      references: references,
+      guarantees: guarantees,
     };
 
     try {
@@ -289,6 +318,30 @@ export default function ClientsPage() {
         <span className="ml-2 text-muted-foreground">{value}</span>
       </div>
     );
+  };
+  
+  const addReference = () => {
+    setReferences([...references, { id: Date.now().toString(), nombreCompleto: '', telefono: '', direccion: '', parentesco: '' }]);
+  };
+
+  const removeReference = (id: string) => {
+    setReferences(references.filter(r => r.id !== id));
+  };
+  
+  const handleReferenceChange = (id: string, field: keyof Reference, value: string) => {
+    setReferences(references.map(r => r.id === id ? { ...r, [field]: value } : r));
+  };
+  
+  const addGuarantee = () => {
+    setGuarantees([...guarantees, { id: Date.now().toString(), tipoGarantia: '', valor: '', detalle: '' }]);
+  };
+
+  const removeGuarantee = (id: string) => {
+    setGuarantees(guarantees.filter(g => g.id !== id));
+  };
+  
+  const handleGuaranteeChange = (id: string, field: keyof Guarantee, value: string) => {
+    setGuarantees(guarantees.map(g => g.id === id ? { ...g, [field]: value } : g));
   };
 
 
@@ -360,7 +413,7 @@ export default function ClientsPage() {
             </CardContent>
           </Card>
         </div>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>{isEditing ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}</DialogTitle>
             <DialogDescription>
@@ -456,6 +509,43 @@ export default function ClientsPage() {
                 <Input id="profesion" name="profesion" placeholder="Profesión..." defaultValue={editingClient?.profesion} />
                 <Input id="centro-trabajo" name="centro-trabajo" placeholder="Centro de trabajo..." defaultValue={editingClient?.centroTrabajo} />
                 <Input id="direccion-trabajo" name="direccion-trabajo" placeholder="Dirección de trabajo..." defaultValue={editingClient?.direccionTrabajo} />
+                
+                <Separator className="my-4" />
+                <h4 className="text-center font-semibold text-primary">Referencias</h4>
+                <div className="space-y-4">
+                  {references.map((ref, index) => (
+                    <Card key={ref.id} className="p-4 relative">
+                      <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeReference(ref.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input placeholder="Nombre completo" value={ref.nombreCompleto} onChange={(e) => handleReferenceChange(ref.id, 'nombreCompleto', e.target.value)} />
+                        <Input placeholder="Teléfono" value={ref.telefono} onChange={(e) => handleReferenceChange(ref.id, 'telefono', e.target.value)} />
+                        <Input placeholder="Dirección" value={ref.direccion} onChange={(e) => handleReferenceChange(ref.id, 'direccion', e.target.value)} />
+                        <Input placeholder="Parentesco" value={ref.parentesco} onChange={(e) => handleReferenceChange(ref.id, 'parentesco', e.target.value)} />
+                      </div>
+                    </Card>
+                  ))}
+                  <Button type="button" variant="outline" onClick={addReference}><PlusCircle className="mr-2 h-4 w-4" />Agregar Referencia</Button>
+                </div>
+                
+                <Separator className="my-4" />
+                <h4 className="text-center font-semibold text-primary">Garantías</h4>
+                 <div className="space-y-4">
+                  {guarantees.map((guarantee, index) => (
+                    <Card key={guarantee.id} className="p-4 relative">
+                       <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeGuarantee(guarantee.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input placeholder="Tipo de garantía" value={guarantee.tipoGarantia} onChange={(e) => handleGuaranteeChange(guarantee.id, 'tipoGarantia', e.target.value)} />
+                        <Input placeholder="Valor estimado (C$)" value={guarantee.valor} onChange={(e) => handleGuaranteeChange(guarantee.id, 'valor', e.target.value)} />
+                        <Textarea placeholder="Detalle u observación" className="md:col-span-2" value={guarantee.detalle} onChange={(e) => handleGuaranteeChange(guarantee.id, 'detalle', e.target.value)} />
+                      </div>
+                    </Card>
+                  ))}
+                   <Button type="button" variant="outline" onClick={addGuarantee}><PlusCircle className="mr-2 h-4 w-4" />Agregar Garantía</Button>
+                </div>
               </div>
             </form>
           </div>
@@ -468,7 +558,7 @@ export default function ClientsPage() {
       </Dialog>
       
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>Detalles del Cliente</DialogTitle>
             <DialogDescription>
@@ -476,34 +566,74 @@ export default function ClientsPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedClient && (
-            <div className="flex-1 overflow-y-auto px-6">
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-primary">Información Personal</h4>
-                  <DetailRow icon={User} label="Nombre Completo" value={`${selectedClient.primerNombre} ${selectedClient.segundoNombre || ''} ${selectedClient.apellido} ${selectedClient.segundoApellido || ''}`} />
-                  <DetailRow icon={FileText} label="Cédula" value={selectedClient.cedula} />
-                  <DetailRow icon={Phone} label="Teléfono" value={selectedClient.phone} />
-                  <DetailRow icon={User} label="Sexo" value={selectedClient.sexo} />
-                  <DetailRow icon={User} label="Estado Civil" value={selectedClient.estadoCivil} />
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-primary">Ubicación</h4>
-                  <DetailRow icon={MapIcon} label="Departamento" value={selectedClient.departamento} />
-                  <DetailRow icon={MapIcon} label="Municipio" value={selectedClient.municipio} />
-                  <DetailRow icon={MapIcon} label="Comunidad" value={selectedClient.comunidad} />
-                  <DetailRow icon={MapIcon} label="Dirección" value={selectedClient.direccion} />
-                  <DetailRow icon={MapPin} label="Coordenadas GPS" value={selectedClient.location} />
-                </div>
-                <Separator />
-                 <div className="space-y-2">
-                  <h4 className="font-semibold text-primary">Información Laboral</h4>
-                   <DetailRow icon={Briefcase} label="Actividad Económica" value={selectedClient.actividadEconomica} />
-                   <DetailRow icon={Briefcase} label="Profesión" value={selectedClient.profesion} />
-                   <DetailRow icon={Building} label="Centro de Trabajo" value={selectedClient.centroTrabajo} />
-                   <DetailRow icon={MapIcon} label="Dirección del Trabajo" value={selectedClient.direccionTrabajo} />
-                 </div>
-              </div>
+            <div className="flex-1 overflow-y-auto px-1">
+              <Tabs defaultValue="personal" className="w-full p-5">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="personal"><User className="mr-2"/>Personal</TabsTrigger>
+                  <TabsTrigger value="location"><MapIcon className="mr-2"/>Ubicación</TabsTrigger>
+                  <TabsTrigger value="work"><Briefcase className="mr-2"/>Laboral</TabsTrigger>
+                  <TabsTrigger value="more"><PlusCircle className="mr-2"/>Más</TabsTrigger>
+                </TabsList>
+                <TabsContent value="personal">
+                   <div className="space-y-4 py-4">
+                     <DetailRow icon={User} label="Nombre Completo" value={`${selectedClient.primerNombre} ${selectedClient.segundoNombre || ''} ${selectedClient.apellido} ${selectedClient.segundoApellido || ''}`} />
+                     <DetailRow icon={FileText} label="Cédula" value={selectedClient.cedula} />
+                     <DetailRow icon={Phone} label="Teléfono" value={selectedClient.phone} />
+                     <DetailRow icon={User} label="Sexo" value={selectedClient.sexo} />
+                     <DetailRow icon={User} label="Estado Civil" value={selectedClient.estadoCivil} />
+                   </div>
+                </TabsContent>
+                <TabsContent value="location">
+                  <div className="space-y-4 py-4">
+                     <DetailRow icon={MapIcon} label="Departamento" value={selectedClient.departamento} />
+                     <DetailRow icon={MapIcon} label="Municipio" value={selectedClient.municipio} />
+                     <DetailRow icon={MapIcon} label="Comunidad" value={selectedClient.comunidad} />
+                     <DetailRow icon={MapIcon} label="Dirección" value={selectedClient.direccion} />
+                     <DetailRow icon={MapPin} label="Coordenadas GPS" value={selectedClient.location} />
+                   </div>
+                </TabsContent>
+                <TabsContent value="work">
+                    <div className="space-y-4 py-4">
+                      <DetailRow icon={Briefcase} label="Actividad Económica" value={selectedClient.actividadEconomica} />
+                      <DetailRow icon={Briefcase} label="Profesión" value={selectedClient.profesion} />
+                      <DetailRow icon={Building} label="Centro de Trabajo" value={selectedClient.centroTrabajo} />
+                      <DetailRow icon={MapIcon} label="Dirección del Trabajo" value={selectedClient.direccionTrabajo} />
+                    </div>
+                </TabsContent>
+                 <TabsContent value="more">
+                    <Tabs defaultValue="references" className="w-full py-4">
+                       <TabsList className="grid w-full grid-cols-2">
+                         <TabsTrigger value="references"><Handshake className="mr-2"/>Referencias</TabsTrigger>
+                         <TabsTrigger value="guarantees"><Gem className="mr-2"/>Garantías</TabsTrigger>
+                       </TabsList>
+                       <TabsContent value="references">
+                          <div className="space-y-2 py-4">
+                           {(selectedClient.references && selectedClient.references.length > 0) ? (
+                            selectedClient.references.map(ref => (
+                              <Card key={ref.id} className="p-4">
+                                <p className="font-semibold">{ref.nombreCompleto} <span className="font-normal text-muted-foreground">({ref.parentesco})</span></p>
+                                <p className="text-sm text-muted-foreground">{ref.direccion}</p>
+                                <p className="text-sm text-muted-foreground">Tel: {ref.telefono}</p>
+                              </Card>
+                            ))
+                           ) : <p className="text-center text-muted-foreground py-4">No hay referencias registradas.</p>}
+                          </div>
+                       </TabsContent>
+                       <TabsContent value="guarantees">
+                         <div className="space-y-2 py-4">
+                          {(selectedClient.guarantees && selectedClient.guarantees.length > 0) ? (
+                             selectedClient.guarantees.map(guarantee => (
+                              <Card key={guarantee.id} className="p-4">
+                                <p className="font-semibold">{guarantee.tipoGarantia} - <span className="text-primary">{guarantee.valor}</span></p>
+                                <p className="text-sm text-muted-foreground">{guarantee.detalle}</p>
+                              </Card>
+                            ))
+                          ) : <p className="text-center text-muted-foreground py-4">No hay garantías registradas.</p>}
+                         </div>
+                       </TabsContent>
+                    </Tabs>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
           <DialogFooter className="p-6 pt-0">
