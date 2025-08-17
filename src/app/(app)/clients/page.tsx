@@ -52,8 +52,13 @@ export default function ClientsPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [municipalities, setMunicipalities] = useState<string[]>([]);
+  
+  const [selectedDepartment, setSelectedDepartment] = useState('Chinandega');
+  const [municipalities, setMunicipalities] = useState<string[]>(() => {
+      const chinandega = nicaraguaData.find(d => d.departamento === 'Chinandega');
+      return chinandega ? chinandega.municipios : [];
+  });
+  
   const { toast } = useToast();
 
   const handleGetLocation = () => {
@@ -220,7 +225,7 @@ export default function ClientsPage() {
             <Separator className="my-4" />
             <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
             
-              <Select onValueChange={handleDepartmentChange}>
+              <Select onValueChange={handleDepartmentChange} defaultValue="Chinandega">
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione un departamento..." />
                 </SelectTrigger>
