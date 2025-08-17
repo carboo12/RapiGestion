@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, PlusCircle, MapPin, Loader2 } from "lucide-react"
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -80,6 +80,7 @@ export default function ClientsPage() {
       return chinandega ? chinandega.municipios : [];
   });
   const [communities, setCommunities] = useState<string[]>([]);
+  const formRef = useRef<HTMLFormElement>(null);
   
   const { toast } = useToast();
 
@@ -211,9 +212,11 @@ export default function ClientsPage() {
         description: "Cliente agregado correctamente.",
       });
       setClients([...clients, { id: docRef.id, ...newClient }]);
-      setOpen(false);
-      e.currentTarget.reset();
+      if (formRef.current) {
+        formRef.current.reset();
+      }
       setLocation(null);
+      setOpen(false);
     } catch (error) {
       console.error("Error adding client: ", error);
       toast({
@@ -304,7 +307,7 @@ export default function ClientsPage() {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
-          <form id="add-client-form" onSubmit={handleAddClient}>
+          <form id="add-client-form" ref={formRef} onSubmit={handleAddClient}>
             <div className="space-y-4 py-4">
                 <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required />
                 <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." />
