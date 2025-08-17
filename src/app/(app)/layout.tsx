@@ -1,5 +1,5 @@
 'use client';
-import { MobileNav } from '@/components/main-nav';
+import { DesktopNav, MobileNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -119,31 +119,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 
   return (
-      <div className="flex flex-col h-screen">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
-            <Button asChild variant="ghost" className="h-10 gap-2 px-2 text-base font-bold">
-              <Link href="/dashboard">
-                <Logo className="size-6 shrink-0 text-primary" />
-                <span className="hidden sm:inline">
-                  RapiGestion
-                </span>
-              </Link>
-            </Button>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div title={isOnline ? 'En línea' : 'Sin conexión'} className={`h-3 w-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <Bell className="h-5 w-5" />
-                    <span className="sr-only">Notificaciones</span>
+      <div className="flex h-screen w-full">
+        <DesktopNav />
+        <div className="flex flex-col flex-1 w-full">
+            <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
+                <Button asChild variant="ghost" className="h-10 gap-2 px-2 text-base font-bold md:hidden">
+                  <Link href="/dashboard">
+                    <Logo className="size-6 shrink-0 text-primary" />
+                    <span className="hidden sm:inline">
+                      RapiGestion
+                    </span>
+                  </Link>
                 </Button>
-              </div>
-              <UserNav onSignOut={handleSignOut}/>
-            </div>
-        </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto mb-16">
-            {children}
-        </main>
-        {isMobile && <MobileNav />}
+                <div className="flex-1"></div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div title={isOnline ? 'En línea' : 'Sin conexión'} className={`h-3 w-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <Button variant="ghost" size="icon" className="h-9 w-9">
+                        <Bell className="h-5 w-5" />
+                        <span className="sr-only">Notificaciones</span>
+                    </Button>
+                  </div>
+                  <UserNav onSignOut={handleSignOut}/>
+                </div>
+            </header>
+            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto mb-16 md:mb-0">
+                {children}
+            </main>
+            {isMobile && <MobileNav />}
+        </div>
       </div>
   );
 }

@@ -1,9 +1,10 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Settings, CreditCard, Wallet, Map } from 'lucide-react';
+import { Wallet, Users, CreditCard, Map } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
+import { Logo } from './logo';
 
 const navItems = [
   { href: '/dashboard', icon: Wallet, label: 'Cobros' },
@@ -11,6 +12,42 @@ const navItems = [
   { href: '/credits', icon: CreditCard, label: 'Creditos' },
   { href: '/routes', icon: Map, label: 'Rutas' },
 ];
+
+export function DesktopNav() {
+  const pathname = usePathname();
+  return (
+    <nav className="hidden md:flex flex-col h-full w-64 border-r bg-background">
+      <div className="flex items-center h-16 border-b px-6">
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+          <Logo className="h-6 w-6 text-primary" />
+          <span>RapiGestion</span>
+        </Link>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-1 p-4">
+          {navItems.map((item) => {
+             const isActive = item.href === '/dashboard' 
+                ? pathname.startsWith('/dashboard') 
+                : pathname === item.href;
+            return (
+              <Link
+                href={item.href}
+                key={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                  isActive && "bg-muted text-primary"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )}
+          )}
+        </div>
+      </div>
+    </nav>
+  )
+}
 
 
 export function MobileNav() {
