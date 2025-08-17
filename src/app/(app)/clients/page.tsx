@@ -33,7 +33,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
@@ -173,15 +172,15 @@ export default function ClientsPage() {
           </CardContent>
         </Card>
       </div>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-0">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-6">
+        <DialogHeader className="pb-0">
           <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
           <DialogDescription>
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6">
-          <div className="space-y-4 py-4 pr-2">
+        <div className="flex-1 overflow-y-auto pr-2">
+          <div className="space-y-4 py-4">
               <Input id="primer-nombre" placeholder="Primer nombre..." />
               <Input id="segundo-nombre" placeholder="Segundo nombre..." />
               <Input id="apellido" placeholder="Apellido..." />
@@ -261,7 +260,7 @@ export default function ClientsPage() {
             <Input id="actividad-economica" placeholder="Actividad Económica..." />
           </div>
         </div>
-        <DialogFooter className="p-6 pt-0">
+        <DialogFooter className="pt-0">
           <Button type="submit" className="w-full" onClick={() => setOpen(false)}>Guardar Cliente</Button>
         </DialogFooter>
       </DialogContent>
