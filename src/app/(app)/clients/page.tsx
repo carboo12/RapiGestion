@@ -88,11 +88,17 @@ export default function ClientsPage() {
       const clientSnapshot = await getDocs(clientsCol);
       const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
       setClients(clientList);
+      if (clientList.length === 0) {
+        toast({
+          title: "Información",
+          description: "No hay clientes registrados para mostrar.",
+        });
+      }
     } catch (error) {
       console.error("Error fetching clients: ", error);
       toast({
-        title: "Error",
-        description: "No se pudieron cargar los clientes.",
+        title: "Error de Carga",
+        description: "No se pudieron cargar los clientes. Revisa los permisos de la base de datos.",
         variant: "destructive",
       });
     }
