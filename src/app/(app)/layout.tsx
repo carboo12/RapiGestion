@@ -67,11 +67,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+        setLoading(false);
       } else {
         setUser(null);
         router.push('/');
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
