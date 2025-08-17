@@ -98,7 +98,7 @@ export default function ClientsPage() {
       console.error("Error fetching clients: ", error);
       toast({
         title: "Error de Carga",
-        description: "No se pudieron cargar los clientes. Revisa los permisos de la base de datos.",
+        description: "No se pudieron cargar los clientes.",
         variant: "destructive",
       });
     }
