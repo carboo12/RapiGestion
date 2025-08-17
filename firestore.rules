@@ -3,16 +3,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Function to check if a user is an administrator
-    function isAdministrator(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'Administrador';
-    }
-
-    // Allow read/write access to a user's own document
     match /users/{userId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-      // Allow create access only if the user making the request is an Administrator
-      allow create: if request.auth != null && isAdministrator(request.auth.uid);
+      allow create: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrador';
     }
   }
 }
