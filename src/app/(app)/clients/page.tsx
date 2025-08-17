@@ -181,49 +181,15 @@ export default function ClientsPage() {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
-          <div className="grid gap-4 py-4 pr-2">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="primer-nombre" className="text-left col-span-1">
-                Primer nombre
-              </Label>
-              <Input id="primer-nombre" placeholder="Primer nombre..." className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="segundo-nombre" className="text-left col-span-1">
-                Segundo nombre
-              </Label>
-              <Input id="segundo-nombre" placeholder="Segundo nombre..." className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="apellido" className="text-left col-span-1">
-                Apellido
-              </Label>
-              <Input id="apellido" placeholder="Apellido..." className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="segundo-apellido" className="text-left col-span-1">
-                Segundo apellido
-              </Label>
-              <Input id="segundo-apellido" placeholder="Segundo apellido..." className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-left col-span-1">
-                Teléfono
-              </Label>
-              <Input id="phone" placeholder="Teléfono..." className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="cedula" className="text-left col-span-1">
-                Cédula
-              </Label>
-              <Input id="cedula" placeholder="Cédula..." className="col-span-3" />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="sexo" className="text-left col-span-1">
-                Sexo
-              </Label>
-               <Select>
-                <SelectTrigger className="col-span-3">
+          <div className="space-y-4 py-4 pr-2">
+              <Input id="primer-nombre" placeholder="Primer nombre..." />
+              <Input id="segundo-nombre" placeholder="Segundo nombre..." />
+              <Input id="apellido" placeholder="Apellido..." />
+              <Input id="segundo-apellido" placeholder="Segundo apellido..." />
+              <Input id="phone" placeholder="Teléfono..." />
+              <Input id="cedula" placeholder="Cédula..." />
+              <Select>
+                <SelectTrigger>
                   <SelectValue placeholder="Seleccione un sexo..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -231,13 +197,8 @@ export default function ClientsPage() {
                   <SelectItem value="femenino">Femenino</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="estado-civil" className="text-left col-span-1">
-                Estado civil
-              </Label>
               <Select>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Estado civil..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,95 +208,61 @@ export default function ClientsPage() {
                   <SelectItem value="divorciado">Divorciado/a</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
             <Separator className="my-4" />
             <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="departamento" className="text-left col-span-1">
-                Departamento
-              </Label>
               <Select>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Seleccione un departamento..." />
                 </SelectTrigger>
                 <SelectContent>
                   {/* Add department options here */}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="municipio" className="text-left col-span-1">
-                Municipio
-              </Label>
               <Select>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Seleccione un municipio..." />
                 </SelectTrigger>
                 <SelectContent>
                   {/* Add municipality options here */}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="comunidad" className="text-left col-span-1">
-                Comunidad
-              </Label>
               <Select>
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue placeholder="Seleccione una comunidad..." />
                 </SelectTrigger>
                 <SelectContent>
                   {/* Add community options here */}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="direccion" className="text-left col-span-1">
-                Dirección
-              </Label>
-              <Input id="direccion" placeholder="Dirección..." className="col-span-3" />
-            </div>
+              <Input id="direccion" placeholder="Dirección..." />
 
-             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="gps-location" className="text-left col-span-1">
-                    Ubicación
-                </Label>
-                <div className="col-span-3 flex items-center gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
-                        {isGettingLocation ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <MapPin className="h-4 w-4" />
-                        )}
-                        GPS
-                    </Button>
-                </div>
-            </div>
-             { (location || locationError) &&
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="col-start-2 col-span-3">
+             <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
+                    {isGettingLocation ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <MapPin className="h-4 w-4" />
+                    )}
+                    GPS
+                </Button>
+                { (location || locationError) &&
+                    <div className="flex-1">
                         {location && <p className="text-sm text-green-600">{location}</p>}
                         {locationError && <p className="text-sm text-destructive">{locationError}</p>}
                     </div>
-                </div>
-            }
-
+                }
+            </div>
 
             <Separator className="my-4" />
             <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="actividad-economica" className="text-left col-span-1">
-                Actividad
-              </Label>
-              <Input id="actividad-economica" placeholder="Actividad Económica..." className="col-span-3" />
-            </div>
+            <Input id="actividad-economica" placeholder="Actividad Económica..." />
           </div>
         </div>
         <DialogFooter className="p-6 pt-0">
-          <Button type="submit" onClick={() => setOpen(false)}>Guardar Cliente</Button>
+          <Button type="submit" className="w-full" onClick={() => setOpen(false)}>Guardar Cliente</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
