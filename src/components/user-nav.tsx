@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { CreditCard, LogOut, Settings, User, Users } from "lucide-react"
+import { CreditCard, LogOut, Settings, User, Users, ShieldQuestion, FileText } from "lucide-react"
 import Link from "next/link"
 
 export function UserNav() {
@@ -42,6 +42,18 @@ export function UserNav() {
             <DropdownMenuItem>
               <Users className="mr-2 h-4 w-4" />
               <span>Usuarios</span>
+            </DropdownMenuItem>
+          </Link>
+          <Link href="/actions">
+            <DropdownMenuItem>
+                <ShieldQuestion className="mr-2 h-4 w-4" />
+                <span>Acciones</span>
+            </DropdownMenuItem>
+          </Link>
+           <Link href="/reports">
+            <DropdownMenuItem>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Reportes</span>
             </DropdownMenuItem>
           </Link>
           <Link href="/settings">
