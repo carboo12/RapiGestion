@@ -48,11 +48,9 @@ const NoCobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <circle cx="12" cy="8" r="4" />
-    <path d="M6 18h2c.9 0 1.8-.4 2.4-1" />
-    <path d="M19.4 17c.4-.6.6-1.2.6-1.9v-2.1c0-1-.8-1.9-1.8-1.9H16" />
-    <path d="M16 12h2a2 2 0 0 1 2 2v2" />
-    <path d="M22 18h-2" />
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 6v7l4 2" />
+    <path d="m15 19-3-3-3 3" />
   </svg>
 );
 
@@ -110,7 +108,7 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid grid-cols-2 gap-4">
-        <Link href="/dashboard/cobrados" className="block">
+        <Link href="/dashboard/cobrados" className="block h-full">
           <Card className="border-primary border-2 rounded-2xl hover:bg-accent transition-colors h-full">
             <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center h-full">
               <Landmark className="w-12 h-12 text-primary" />
@@ -118,7 +116,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </Link>
-        <Link href="/dashboard/no-cobrados" className="block">
+        <Link href="/dashboard/no-cobrados" className="block h-full">
           <Card className="border-destructive border-2 rounded-2xl hover:bg-accent transition-colors h-full">
             <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center h-full">
               <NoCobradosIcon className="w-12 h-12 text-destructive" />
