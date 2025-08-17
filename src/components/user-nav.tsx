@@ -18,7 +18,11 @@ import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { Skeleton } from "./ui/skeleton";
 
-export function UserNav() {
+interface UserNavProps {
+  onSignOut: () => void;
+}
+
+export function UserNav({ onSignOut }: UserNavProps) {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [initials, setInitials] = useState("");
   const [loading, setLoading] = useState(true);
@@ -112,12 +116,10 @@ export function UserNav() {
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <Link href="/">
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={onSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Cerrar Sesión</span>
           </DropdownMenuItem>
-        </Link>
       </DropdownMenuContent>
     </DropdownMenu>
   )

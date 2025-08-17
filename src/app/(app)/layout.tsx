@@ -47,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       .then(() => {
         toast({
           title: "Sesión cerrada",
-          description: "Tu sesión ha sido cerrada por inactividad.",
+          description: "Has cerrado sesión correctamente.",
         });
         router.push('/');
       })
@@ -67,11 +67,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+        setLoading(false);
       } else {
-        setUser(null);
         router.push('/');
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -83,32 +82,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const resetTimer = () => {
       clearTimeout(activityTimer);
-      activityTimer = setTimeout(handleSignOut, 30 * 60 * 1000); // 30 minutos
+      activityTimer = setTimeout(() => {
+         const auth = getAuth(app);
+         if (auth.currentUser) {
+            signOut(auth).then(() => {
+                toast({
+                    title: "Sesión cerrada por inactividad",
+                    description: "Tu sesión ha sido cerrada automáticamente.",
+                });
+                router.push('/');
+            });
+         }
+      }, 30 * 60 * 1000); // 30 minutos
     };
 
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-
-    const resetActivityTracker = () => {
-      resetTimer();
-    };
-
-    events.forEach(event => {
-      window.addEventListener(event, resetActivityTracker);
-    });
-
-    resetTimer(); // Iniciar el temporizador al cargar el componente
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer();
 
     return () => {
       clearTimeout(activityTimer);
-      events.forEach(event => {
-        window.removeEventListener(event, resetActivityTracker);
-      });
+      events.forEach(event => window.removeEventListener(event, resetTimer));
     };
-  }, [handleSignOut]);
+  }, [router, toast]);
 
-  if (loading || !user) {
+  if (loading) {
     return <Loading />;
   }
+  
+  if (!user) {
+    return null; // O un componente de carga, mientras redirige
+  }
+
 
   return (
       <div className="flex flex-col h-screen">
@@ -121,7 +126,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </span>
               </Link>
             </Button>
-            <UserNav />
+            <UserNav onSignOut={handleSignOut}/>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto mb-16">
             {children}
