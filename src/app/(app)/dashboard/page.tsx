@@ -118,12 +118,14 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </Link>
-        <Card className="border-destructive border-2 rounded-2xl">
-          <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center">
-            <NoCobradosIcon className="w-12 h-12 text-destructive" />
-            <p className="font-semibold text-destructive">No Cobrados</p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/no-cobrados" className="block">
+          <Card className="border-destructive border-2 rounded-2xl hover:bg-accent transition-colors">
+            <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center">
+              <NoCobradosIcon className="w-12 h-12 text-destructive" />
+              <p className="font-semibold text-destructive">No Cobrados</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   )
