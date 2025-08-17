@@ -114,79 +114,81 @@ export default function ClientsPage() {
           </CardContent>
         </Card>
       </div>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
           <DialogDescription>
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="primer-nombre" className="text-right">
-              Primer nombre
-            </Label>
-            <Input id="primer-nombre" placeholder="Primer nombre..." className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="segundo-nombre" className="text-right">
-              Segundo nombre
-            </Label>
-            <Input id="segundo-nombre" placeholder="Segundo nombre..." className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="apellido" className="text-right">
-              Apellido
-            </Label>
-            <Input id="apellido" placeholder="Apellido..." className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="segundo-apellido" className="text-right">
-              Segundo apellido
-            </Label>
-            <Input id="segundo-apellido" placeholder="Segundo apellido..." className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="phone" className="text-right">
-              Teléfono
-            </Label>
-            <Input id="phone" placeholder="Teléfono..." className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="cedula" className="text-right">
-              Cédula
-            </Label>
-            <Input id="cedula" placeholder="Cédula..." className="col-span-3" />
-          </div>
-           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="sexo" className="text-right">
-              Sexo
-            </Label>
-             <Select>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Seleccione un sexo..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="masculino">Masculino</SelectItem>
-                <SelectItem value="femenino">Femenino</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="estado-civil" className="text-right">
-              Estado civil
-            </Label>
-            <Select>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Estado civil..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="soltero">Soltero/a</SelectItem>
-                <SelectItem value="casado">Casado/a</SelectItem>
-                <SelectItem value="viudo">Viudo/a</SelectItem>
-                <SelectItem value="divorciado">Divorciado/a</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex-1 overflow-y-auto pr-4">
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="primer-nombre" className="text-right">
+                Primer nombre
+              </Label>
+              <Input id="primer-nombre" placeholder="Primer nombre..." className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="segundo-nombre" className="text-right">
+                Segundo nombre
+              </Label>
+              <Input id="segundo-nombre" placeholder="Segundo nombre..." className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="apellido" className="text-right">
+                Apellido
+              </Label>
+              <Input id="apellido" placeholder="Apellido..." className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="segundo-apellido" className="text-right">
+                Segundo apellido
+              </Label>
+              <Input id="segundo-apellido" placeholder="Segundo apellido..." className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Teléfono
+              </Label>
+              <Input id="phone" placeholder="Teléfono..." className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="cedula" className="text-right">
+                Cédula
+              </Label>
+              <Input id="cedula" placeholder="Cédula..." className="col-span-3" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="sexo" className="text-right">
+                Sexo
+              </Label>
+               <Select>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccione un sexo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masculino">Masculino</SelectItem>
+                  <SelectItem value="femenino">Femenino</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="estado-civil" className="text-right">
+                Estado civil
+              </Label>
+              <Select>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Estado civil..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="soltero">Soltero/a</SelectItem>
+                  <SelectItem value="casado">Casado/a</SelectItem>
+                  <SelectItem value="viudo">Viudo/a</SelectItem>
+                  <SelectItem value="divorciado">Divorciado/a</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
         <DialogFooter>
