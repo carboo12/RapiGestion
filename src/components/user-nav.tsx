@@ -60,7 +60,7 @@ export function UserNav({ onSignOut }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 border-2 border-primary">
           <Logo className="h-8 w-8 text-primary" />
         </Button>
       </DropdownMenuTrigger>
