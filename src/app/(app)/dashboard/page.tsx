@@ -1,9 +1,13 @@
+'use client';
 import {
   Card,
   CardContent,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator";
-import { BadgeCheck, Ban } from "lucide-react"
+import { app } from "@/lib/firebase";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { doc, getDoc, getFirestore } from "firebase/firestore";
+import { useEffect, useState } from "react";
 
 const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -54,6 +58,29 @@ const NoCobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export default function DashboardPage() {
+  const [userName, setUserName] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setUserName(userDocSnap.data().name.toUpperCase());
+        } else {
+          setUserName(user.email?.split('@')[0].toUpperCase() || 'Usuario');
+        }
+      } else {
+        setUserName(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="flex-1 space-y-4 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
       <div className="flex items-center justify-between space-y-2">
@@ -64,7 +91,7 @@ export default function DashboardPage() {
       <Card className="border-primary border-2 rounded-2xl shadow-lg">
         <CardContent className="flex flex-col items-center text-center p-6 space-y-3">
           <CustomLogo className="w-20 h-20 text-blue-800" />
-          <h3 className="text-2xl font-bold text-primary">HENRY CONTRERAS</h3>
+          <h3 className="text-2xl font-bold text-primary">{userName || 'Cargando...'}</h3>
           <p className="text-muted-foreground">Que tengas un buen día!</p>
           <p className="text-sm text-muted-foreground">16/8/2025</p>
           <h4 className="text-xl font-semibold text-blue-800">Recuperación</h4>
