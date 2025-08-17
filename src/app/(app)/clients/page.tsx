@@ -180,7 +180,7 @@ export default function ClientsPage() {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-          <div className="space-y-4 py-4 px-6">
+          <div className="space-y-4 px-6 py-4">
               <Input id="primer-nombre" placeholder="Primer nombre..." />
               <Input id="segundo-nombre" placeholder="Segundo nombre..." />
               <Input id="apellido" placeholder="Apellido..." />
@@ -258,6 +258,9 @@ export default function ClientsPage() {
             <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
 
             <Input id="actividad-economica" placeholder="Actividad Económica..." />
+            <Input id="profesion" placeholder="Profesión..." />
+            <Input id="centro-trabajo" placeholder="Centro de trabajo..." />
+            <Input id="direccion-trabajo" placeholder="Dirección de trabajo..." />
           </div>
         </div>
         <DialogFooter className="p-6 pt-0">
