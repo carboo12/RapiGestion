@@ -303,13 +303,13 @@ export default function ClientsPage() {
                     Ubicación
                 </Label>
                 <div className="col-span-3 flex items-center gap-2">
-                    <Button type="button" variant="outline" onClick={handleGetLocation} disabled={isGettingLocation}>
+                    <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
                         {isGettingLocation ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                            <MapPin className="mr-2 h-4 w-4" />
+                            <MapPin className="h-4 w-4" />
                         )}
-                        Obtener Ubicación GPS
+                        GPS
                     </Button>
                 </div>
             </div>
