@@ -1,3 +1,4 @@
+'use client';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,24 +12,71 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CreditCard, LogOut, Settings, User, Users, ShieldQuestion, FileText } from "lucide-react"
 import Link from "next/link"
+import { useEffect, useState } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, getFirestore } from "firebase/firestore";
+import { app } from "@/lib/firebase";
+import { Skeleton } from "./ui/skeleton";
 
 export function UserNav() {
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [initials, setInitials] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        let name = "Usuario";
+        if (userDocSnap.exists()) {
+          name = userDocSnap.data().name;
+        } else if (firebaseUser.email) {
+          name = firebaseUser.email.split('@')[0];
+        }
+
+        setUser({ name, email: firebaseUser.email || "" });
+        
+        const nameParts = name.split(' ');
+        const userInitials = (nameParts.length > 1 
+            ? nameParts[0][0] + nameParts[1][0] 
+            : nameParts[0].substring(0, 2)
+        ).toUpperCase();
+        setInitials(userInitials);
+
+      } else {
+        setUser(null);
+        setInitials("");
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return <Skeleton className="h-8 w-8 rounded-full" />;
+  }
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
             <AvatarImage src="https://placehold.co/100x100.png" alt="@shadcn" data-ai-hint="user avatar" />
-            <AvatarFallback>AD</AvatarFallback>
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Admin</p>
+            <p className="text-sm font-medium leading-none">{user?.name || 'Usuario'}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              admin@rapigestion.com
+              {user?.email || ''}
             </p>
           </div>
         </DropdownMenuLabel>
