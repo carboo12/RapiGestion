@@ -89,8 +89,7 @@ export default function ClientsPage() {
       const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
       setClients(clientList);
     } catch (error) {
-      console.error("Error fetching clients: ", error);
-      // No toast on error, just show an empty table.
+      // Silently fail and show an empty table.
     }
   };
 
@@ -382,5 +381,3 @@ export default function ClientsPage() {
     </Dialog>
   )
 }
-
-    
