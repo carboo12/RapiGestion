@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { nicaraguaData } from "@/lib/nicaragua-data";
 
 const clients = [
   { id: 'CUST-001', name: 'Alice Johnson', phone: '+1-202-555-0191', address: '1234 Elm St, Springfield', email: 'alice.j@example.com' },
@@ -51,6 +52,8 @@ export default function ClientsPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [municipalities, setMunicipalities] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleGetLocation = () => {
@@ -104,6 +107,12 @@ export default function ClientsPage() {
       }
     );
   };
+
+  const handleDepartmentChange = (value: string) => {
+    setSelectedDepartment(value);
+    const department = nicaraguaData.find(d => d.departamento === value);
+    setMunicipalities(department ? department.municipios : []);
+  }
 
 
   return (
@@ -211,20 +220,24 @@ export default function ClientsPage() {
             <Separator className="my-4" />
             <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
             
-              <Select>
+              <Select onValueChange={handleDepartmentChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione un departamento..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Add department options here */}
+                  {nicaraguaData.map(d => (
+                    <SelectItem key={d.departamento} value={d.departamento}>{d.departamento}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select>
+              <Select disabled={!selectedDepartment}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione un municipio..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Add municipality options here */}
+                   {municipalities.map(m => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select>
