@@ -13,6 +13,9 @@ import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { app } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -40,14 +43,31 @@ const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
+
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/dashboard');
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    
+    const auth = getAuth(app);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Authentication error: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error de Autenticación",
+        description: "El correo o la contraseña son incorrectos.",
+      });
+    }
   }
 
   return (
@@ -68,6 +88,7 @@ export default function LoginPage() {
               <Label htmlFor="email">Correo</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="m@ejemplo.com"
                 required
@@ -84,7 +105,7 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} required />
+                <Input id="password" name="password" type={showPassword ? "text" : "password"} required />
                 <Button
                   type="button"
                   variant="ghost"
