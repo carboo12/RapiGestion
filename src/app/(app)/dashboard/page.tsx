@@ -8,6 +8,7 @@ import { app } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import packageJson from "../../../../package.json";
 
 const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -85,7 +86,7 @@ export default function DashboardPage() {
     <div className="flex-1 space-y-4 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-xl font-bold tracking-tight text-primary">Recuperacion</h2>
-        <span className="text-sm text-primary">v 10.1.1</span>
+        <span className="text-sm text-primary">v {packageJson.version}</span>
       </div>
       
       <Card className="border-primary border-2 rounded-2xl shadow-lg">
