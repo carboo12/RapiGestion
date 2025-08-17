@@ -30,14 +30,18 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { app } from "@/lib/firebase"
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { getFirestore, collection, doc, setDoc, getDocs } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
 
-const initialUsers = [
-  { name: 'Usuario Administrador', email: 'admin@rapigestion.com', role: 'Administrador' },
-  { name: 'Carlos Rodriguez', email: 'carlos.r@rapigestion.com', role: 'Gestor de Cobros' },
-  { name: 'Maria Sanchez', email: 'maria.s@rapigestion.com', role: 'Gestor de Cobros' },
-  { name: 'John Dispatch', email: 'john.d@rapigestion.com', role: 'Usuario de Desembolsos' },
-];
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 const getRoleBadgeVariant = (role: string) => {
   switch(role) {
@@ -49,21 +53,69 @@ const getRoleBadgeVariant = (role: string) => {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [open, setOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
 
-  const handleAddUser = (e: React.FormEvent<HTMLFormElement>) => {
+  const fetchUsers = async () => {
+    try {
+      const db = getFirestore(app);
+      const usersCol = collection(db, 'users');
+      const userSnapshot = await getDocs(usersCol);
+      const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      setUsers(userList);
+    } catch (error) {
+      console.error("Error fetching users: ", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los usuarios.",
+        variant: "destructive",
+      })
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newUser = {
-      name: formData.get('name') as string,
-      email: formData.get('email') as string,
-      role: formData.get('role') as string,
-    };
-    setUsers([...users, newUser]);
-    setOpen(false);
-    e.currentTarget.reset();
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const role = formData.get('role') as string;
+
+    try {
+      const auth = getAuth(app);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      const db = getFirestore(app);
+      await setDoc(doc(db, "users", user.uid), {
+        name,
+        email,
+        role,
+      });
+
+      toast({
+        title: "Éxito",
+        description: "Usuario agregado correctamente.",
+      });
+
+      setUsers([...users, { id: user.uid, name, email, role }]);
+      setOpen(false);
+      e.currentTarget.reset();
+
+    } catch (error: any) {
+      console.error("Error adding user: ", error);
+      toast({
+        title: "Error al agregar usuario",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -94,7 +146,7 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {users.map(user => (
-                  <TableRow key={user.email}>
+                  <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
