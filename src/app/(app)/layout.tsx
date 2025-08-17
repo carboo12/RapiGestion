@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import Loading from '../loading';
 import Image from 'next/image';
 import { Logo } from '@/components/logo';
+import { Bell } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
@@ -19,6 +20,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
+
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
 
   const handleSignOut = useCallback(() => {
     const auth = getAuth(app);
@@ -108,7 +129,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </span>
               </Link>
             </Button>
-            <UserNav onSignOut={handleSignOut}/>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div title={isOnline ? 'En línea' : 'Sin conexión'} className={`h-3 w-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Bell className="h-5 w-5" />
+                    <span className="sr-only">Notificaciones</span>
+                </Button>
+              </div>
+              <UserNav onSignOut={handleSignOut}/>
+            </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto mb-16">
             {children}
