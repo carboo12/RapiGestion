@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle } from "lucide-react"
+import { MoreHorizontal, PlusCircle, MapPin, Loader2 } from "lucide-react"
 import { useState } from "react";
 import {
   Dialog,
@@ -37,6 +37,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 
 const clients = [
   { id: 'CUST-001', name: 'Alice Johnson', phone: '+1-202-555-0191', address: '1234 Elm St, Springfield', email: 'alice.j@example.com' },
@@ -48,6 +49,63 @@ const clients = [
 
 export default function ClientsPage() {
   const [open, setOpen] = useState(false);
+  const [location, setLocation] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const { toast } = useToast();
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("La geolocalización no es compatible con este navegador.");
+      toast({
+        variant: "destructive",
+        title: "Error de Geolocalización",
+        description: "Tu navegador no es compatible con esta función.",
+      });
+      return;
+    }
+
+    setIsGettingLocation(true);
+    setLocationError(null);
+    setLocation(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setLocation(`Lat: ${latitude.toFixed(6)}, Lon: ${longitude.toFixed(6)}`);
+        setIsGettingLocation(false);
+        toast({
+            title: "Ubicación Obtenida",
+            description: "Se capturaron las coordenadas GPS correctamente.",
+        })
+      },
+      (error) => {
+        let message = "";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            message = "Permiso de ubicación denegado.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            message = "La información de ubicación no está disponible.";
+            break;
+          case error.TIMEOUT:
+            message = "Se agotó el tiempo de espera para obtener la ubicación.";
+            break;
+          default:
+            message = "Ocurrió un error desconocido.";
+            break;
+        }
+        setLocationError(message);
+        setIsGettingLocation(false);
+        toast({
+          variant: "destructive",
+          title: "Error al obtener ubicación",
+          description: message,
+        });
+      }
+    );
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -240,6 +298,31 @@ export default function ClientsPage() {
               <Input id="direccion" placeholder="Dirección..." className="col-span-3" />
             </div>
 
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="gps-location" className="text-right">
+                    Ubicación
+                </Label>
+                <div className="col-span-3 flex items-center gap-2">
+                    <Button type="button" variant="outline" onClick={handleGetLocation} disabled={isGettingLocation}>
+                        {isGettingLocation ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <MapPin className="mr-2 h-4 w-4" />
+                        )}
+                        Obtener Ubicación GPS
+                    </Button>
+                </div>
+            </div>
+             { (location || locationError) &&
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <div className="col-start-2 col-span-3">
+                        {location && <p className="text-sm text-green-600">{location}</p>}
+                        {locationError && <p className="text-sm text-destructive">{locationError}</p>}
+                    </div>
+                </div>
+            }
+
+
             <Separator className="my-4" />
             <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
 
@@ -258,3 +341,5 @@ export default function ClientsPage() {
     </Dialog>
   )
 }
+
+    
