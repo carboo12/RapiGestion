@@ -58,10 +58,14 @@ const NoCobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export default function DashboardPage() {
   const [userName, setUserName] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState<string>('');
+  const [dailyRecovery, setDailyRecovery] = useState(0);
+  const [dailyPaymentsCount, setDailyPaymentsCount] = useState(0);
   
   useEffect(() => {
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // TODO: fetch daily recovery and payments count from firestore
 
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
@@ -101,9 +105,9 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Que tengas un buen día!</p>
           <p className="text-sm text-muted-foreground">{currentDate || 'Cargando fecha...'}</p>
           <h4 className="text-xl font-semibold text-blue-800">Recuperación</h4>
-          <p className="text-3xl font-bold text-blue-800">C$ 11,595.00</p>
+          <p className="text-3xl font-bold text-blue-800">C$ {dailyRecovery.toFixed(2)}</p>
           <Separator className="w-full" />
-          <p className="text-lg font-semibold">Total de cobros: 15</p>
+          <p className="text-lg font-semibold">Total de cobros: {dailyPaymentsCount}</p>
         </CardContent>
       </Card>
 
