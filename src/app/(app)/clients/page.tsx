@@ -109,9 +109,6 @@ export default function ClientsPage() {
   });
   const [communities, setCommunities] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
-
-  const [references, setReferences] = useState<Reference[]>([]);
-  const [guarantees, setGuarantees] = useState<Guarantee[]>([]);
   
   const { toast } = useToast();
 
@@ -141,11 +138,6 @@ export default function ClientsPage() {
       setCommunities(municipality ? municipality.comunidades : []);
 
       setLocation(editingClient.location || null);
-      setReferences(editingClient.references || []);
-      setGuarantees(editingClient.guarantees || []);
-    } else {
-      setReferences([]);
-      setGuarantees([]);
     }
   }, [editingClient])
   
@@ -248,7 +240,7 @@ export default function ClientsPage() {
     }
 
     const formData = new FormData(e.currentTarget);
-    const clientData: Omit<Client, 'id'> = {
+    const clientData: Omit<Client, 'id' | 'references' | 'guarantees'> = {
       primerNombre: formData.get('primer-nombre') as string,
       segundoNombre: formData.get('segundo-nombre') as string,
       apellido: formData.get('apellido') as string,
@@ -267,8 +259,6 @@ export default function ClientsPage() {
       centroTrabajo: formData.get('centro-trabajo') as string,
       direccionTrabajo: formData.get('direccion-trabajo') as string,
       createdBy: isEditing ? editingClient?.createdBy : user.uid,
-      references: references,
-      guarantees: guarantees,
     };
 
     try {
@@ -276,16 +266,26 @@ export default function ClientsPage() {
       if (isEditing && editingClient) {
         const clientRef = doc(db, "clients", editingClient.id);
         await setDoc(clientRef, clientData, { merge: true });
+        
+        const updatedClient = { 
+          ...editingClient, 
+          ...clientData,
+        };
+        setClients(clients.map(c => c.id === editingClient.id ? updatedClient : c));
 
-        setClients(clients.map(c => c.id === editingClient.id ? { id: editingClient.id, ...clientData } : c));
         toast({
           title: "Éxito",
           description: "Cliente actualizado correctamente.",
         });
 
       } else {
-        const docRef = await addDoc(collection(db, "clients"), clientData);
-        setClients([...clients, { id: docRef.id, ...clientData }]);
+        const newClientData = {
+          ...clientData,
+          references: [],
+          guarantees: [],
+        };
+        const docRef = await addDoc(collection(db, "clients"), newClientData);
+        setClients([...clients, { id: docRef.id, ...newClientData }]);
         toast({
           title: "Éxito",
           description: "Cliente agregado correctamente.",
@@ -320,31 +320,6 @@ export default function ClientsPage() {
     );
   };
   
-  const addReference = () => {
-    setReferences([...references, { id: Date.now().toString(), nombreCompleto: '', telefono: '', direccion: '', parentesco: '' }]);
-  };
-
-  const removeReference = (id: string) => {
-    setReferences(references.filter(r => r.id !== id));
-  };
-  
-  const handleReferenceChange = (id: string, field: keyof Reference, value: string) => {
-    setReferences(references.map(r => r.id === id ? { ...r, [field]: value } : r));
-  };
-  
-  const addGuarantee = () => {
-    setGuarantees([...guarantees, { id: Date.now().toString(), tipoGarantia: '', valor: '', detalle: '' }]);
-  };
-
-  const removeGuarantee = (id: string) => {
-    setGuarantees(guarantees.filter(g => g.id !== id));
-  };
-  
-  const handleGuaranteeChange = (id: string, field: keyof Guarantee, value: string) => {
-    setGuarantees(guarantees.map(g => g.id === id ? { ...g, [field]: value } : g));
-  };
-
-
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -509,43 +484,6 @@ export default function ClientsPage() {
                 <Input id="profesion" name="profesion" placeholder="Profesión..." defaultValue={editingClient?.profesion} />
                 <Input id="centro-trabajo" name="centro-trabajo" placeholder="Centro de trabajo..." defaultValue={editingClient?.centroTrabajo} />
                 <Input id="direccion-trabajo" name="direccion-trabajo" placeholder="Dirección de trabajo..." defaultValue={editingClient?.direccionTrabajo} />
-                
-                <Separator className="my-4" />
-                <h4 className="text-center font-semibold text-primary">Referencias</h4>
-                <div className="space-y-4">
-                  {references.map((ref, index) => (
-                    <Card key={ref.id} className="p-4 relative">
-                      <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeReference(ref.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input placeholder="Nombre completo" value={ref.nombreCompleto} onChange={(e) => handleReferenceChange(ref.id, 'nombreCompleto', e.target.value)} />
-                        <Input placeholder="Teléfono" value={ref.telefono} onChange={(e) => handleReferenceChange(ref.id, 'telefono', e.target.value)} />
-                        <Input placeholder="Dirección" value={ref.direccion} onChange={(e) => handleReferenceChange(ref.id, 'direccion', e.target.value)} />
-                        <Input placeholder="Parentesco" value={ref.parentesco} onChange={(e) => handleReferenceChange(ref.id, 'parentesco', e.target.value)} />
-                      </div>
-                    </Card>
-                  ))}
-                  <Button type="button" variant="outline" onClick={addReference}><PlusCircle className="mr-2 h-4 w-4" />Agregar Referencia</Button>
-                </div>
-                
-                <Separator className="my-4" />
-                <h4 className="text-center font-semibold text-primary">Garantías</h4>
-                 <div className="space-y-4">
-                  {guarantees.map((guarantee, index) => (
-                    <Card key={guarantee.id} className="p-4 relative">
-                       <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeGuarantee(guarantee.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input placeholder="Tipo de garantía" value={guarantee.tipoGarantia} onChange={(e) => handleGuaranteeChange(guarantee.id, 'tipoGarantia', e.target.value)} />
-                        <Input placeholder="Valor estimado (C$)" value={guarantee.valor} onChange={(e) => handleGuaranteeChange(guarantee.id, 'valor', e.target.value)} />
-                        <Textarea placeholder="Detalle u observación" className="md:col-span-2" value={guarantee.detalle} onChange={(e) => handleGuaranteeChange(guarantee.id, 'detalle', e.target.value)} />
-                      </div>
-                    </Card>
-                  ))}
-                   <Button type="button" variant="outline" onClick={addGuarantee}><PlusCircle className="mr-2 h-4 w-4" />Agregar Garantía</Button>
-                </div>
               </div>
             </form>
           </div>
