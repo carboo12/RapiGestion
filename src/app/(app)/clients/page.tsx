@@ -36,6 +36,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 const clients = [
   { id: 'CUST-001', name: 'Alice Johnson', phone: '+1-202-555-0191', address: '1234 Elm St, Springfield', email: 'alice.j@example.com' },
@@ -122,7 +123,7 @@ export default function ClientsPage() {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 pr-3">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="primer-nombre" className="text-right">
                 Primer nombre
@@ -188,6 +189,65 @@ export default function ClientsPage() {
                   <SelectItem value="divorciado">Divorciado/a</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <Separator className="my-4" />
+            <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="departamento" className="text-right">
+                Departamento
+              </Label>
+              <Select>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccione un departamento..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Add department options here */}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="municipio" className="text-right">
+                Municipio
+              </Label>
+              <Select>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccione un municipio..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Add municipality options here */}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="comunidad" className="text-right">
+                Comunidad
+              </Label>
+              <Select>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Seleccione una comunidad..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Add community options here */}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="direccion" className="text-right">
+                Dirección
+              </Label>
+              <Input id="direccion" placeholder="Dirección..." className="col-span-3" />
+            </div>
+
+            <Separator className="my-4" />
+            <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="actividad-economica" className="text-right">
+                Actividad
+              </Label>
+              <Input id="actividad-economica" placeholder="Actividad Económica..." className="col-span-3" />
             </div>
           </div>
         </div>
