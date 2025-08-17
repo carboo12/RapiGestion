@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, MapPin, Loader2 } from "lucide-react"
+import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText } from "lucide-react"
 import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
@@ -31,7 +31,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -75,6 +74,9 @@ export default function ClientsPage() {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const [location, setLocation] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -198,6 +200,11 @@ export default function ClientsPage() {
     setOpen(true);
   }
 
+  const handleViewDetails = (client: Client) => {
+    setSelectedClient(client);
+    setIsDetailsOpen(true);
+  }
+
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -214,7 +221,7 @@ export default function ClientsPage() {
     }
 
     const formData = new FormData(e.currentTarget);
-    const clientData = {
+    const clientData: Omit<Client, 'id'> = {
       primerNombre: formData.get('primer-nombre') as string,
       segundoNombre: formData.get('segundo-nombre') as string,
       apellido: formData.get('apellido') as string,
@@ -272,179 +279,236 @@ export default function ClientsPage() {
     }
   }
 
+  const DetailRow = ({ label, value, icon }: { label: string; value?: string | null; icon: React.ElementType }) => {
+    const Icon = icon;
+    if (!value) return null;
+    return (
+      <div className="flex items-start text-sm">
+        <Icon className="w-4 h-4 mr-2 mt-0.5 text-primary" />
+        <span className="font-semibold">{label}:</span>
+        <span className="ml-2 text-muted-foreground">{value}</span>
+      </div>
+    );
+  };
+
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <div className="space-y-4">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
-        </div>
-        <div>
-          <Button onClick={() => handleOpenDialog(null)}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Agregar Cliente
-          </Button>
-        </div>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <div className="space-y-4">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
+          </div>
+          <div>
+            <Button onClick={() => handleOpenDialog(null)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Agregar Cliente
+            </Button>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Todos los Clientes</CardTitle>
-            <CardDescription>
-              Una lista de todos los clientes registrados en RapiGestion.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID de Cliente</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Acciones</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clients.length === 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Todos los Clientes</CardTitle>
+              <CardDescription>
+                Una lista de todos los clientes registrados en RapiGestion.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">No hay clientes registrados.</TableCell>
+                    <TableHead>ID de Cliente</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Dirección</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Acciones</span>
+                    </TableHead>
                   </TableRow>
-                )}
-                {clients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.id.substring(0,8).toUpperCase()}</TableCell>
-                    <TableCell>{`${client.primerNombre} ${client.apellido}`}</TableCell>
-                    <TableCell>{client.phone}</TableCell>
-                    <TableCell>{client.direccion}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleOpenDialog(client)}>Editar Cliente</DropdownMenuItem>
-                          <DropdownMenuItem>Ver Garantías</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle>{isEditing ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? 'Actualiza la información del cliente.' : 'Rellena la información para registrar a un nuevo cliente en el sistema.'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6">
-          <form id="client-form" ref={formRef} onSubmit={handleFormSubmit}>
-            <div className="space-y-4 py-4">
-                <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required defaultValue={editingClient?.primerNombre} />
-                <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." defaultValue={editingClient?.segundoNombre} />
-                <Input id="apellido" name="apellido" placeholder="Apellido..." required defaultValue={editingClient?.apellido}/>
-                <Input id="segundo-apellido" name="segundo-apellido" placeholder="Segundo apellido..." defaultValue={editingClient?.segundoApellido} />
-                <Input id="phone" name="phone" placeholder="Teléfono..." required defaultValue={editingClient?.phone} />
-                <Input id="cedula" name="cedula" placeholder="Cédula..." required defaultValue={editingClient?.cedula} />
-                <Select name="sexo" required defaultValue={editingClient?.sexo}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un sexo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="femenino">Femenino</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select name="estado-civil" required defaultValue={editingClient?.estadoCivil}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Estado civil..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="soltero">Soltero/a</SelectItem>
-                    <SelectItem value="casado">Casado/a</SelectItem>
-                    <SelectItem value="viudo">Viudo/a</SelectItem>
-                    <SelectItem value="divorciado">Divorciado/a</SelectItem>
-                  </SelectContent>
-                </Select>
-
-              <Separator className="my-4" />
-              <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
-              
-                <Select name="departamento" onValueChange={handleDepartmentChange} defaultValue={editingClient?.departamento || "Chinandega"}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un departamento..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {nicaraguaData.map(d => (
-                      <SelectItem key={d.departamento} value={d.departamento}>{d.departamento}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select name="municipio" disabled={!selectedDepartment && !editingClient} onValueChange={handleMunicipalityChange} defaultValue={editingClient?.municipio}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un municipio..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {municipalities.map(m => (
-                      <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select name="comunidad" disabled={!selectedMunicipality && !editingClient} defaultValue={editingClient?.comunidad}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione una comunidad..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {communities.map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input id="direccion" name="direccion" placeholder="Dirección..." required defaultValue={editingClient?.direccion}/>
-
-              <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
-                      {isGettingLocation ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                          <MapPin className="h-4 w-4" />
-                      )}
-                      GPS
-                  </Button>
-                  { (location || locationError) &&
-                      <div className="flex-1">
-                          {location && <p className="text-sm text-green-600">{location}</p>}
-                          {locationError && <p className="text-sm text-destructive">{locationError}</p>}
-                      </div>
-                  }
-              </div>
-
-              <Separator className="my-4" />
-              <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
-
-              <Input id="actividad-economica" name="actividad-economica" placeholder="Actividad Económica..." defaultValue={editingClient?.actividadEconomica} />
-              <Input id="profesion" name="profesion" placeholder="Profesión..." defaultValue={editingClient?.profesion} />
-              <Input id="centro-trabajo" name="centro-trabajo" placeholder="Centro de trabajo..." defaultValue={editingClient?.centroTrabajo} />
-              <Input id="direccion-trabajo" name="direccion-trabajo" placeholder="Dirección de trabajo..." defaultValue={editingClient?.direccionTrabajo} />
-            </div>
-          </form>
+                </TableHeader>
+                <TableBody>
+                  {clients.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center">No hay clientes registrados.</TableCell>
+                    </TableRow>
+                  )}
+                  {clients.map((client) => (
+                    <TableRow key={client.id}>
+                      <TableCell className="font-medium">{client.id.substring(0,8).toUpperCase()}</TableCell>
+                      <TableCell>{`${client.primerNombre} ${client.apellido}`}</TableCell>
+                      <TableCell>{client.phone}</TableCell>
+                      <TableCell>{client.direccion}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleViewDetails(client)}>Ver Detalles</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenDialog(client)}>Editar Cliente</DropdownMenuItem>
+                            <DropdownMenuItem>Ver Garantías</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
-        <DialogFooter className="p-6 pt-0">
-          <Button type="submit" form="client-form" className="w-full">
-            {isEditing ? 'Guardar Cambios' : 'Guardar Cliente'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>{isEditing ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}</DialogTitle>
+            <DialogDescription>
+              {isEditing ? 'Actualiza la información del cliente.' : 'Rellena la información para registrar a un nuevo cliente en el sistema.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6">
+            <form id="client-form" ref={formRef} onSubmit={handleFormSubmit}>
+              <div className="space-y-4 py-4">
+                  <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required defaultValue={editingClient?.primerNombre} />
+                  <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." defaultValue={editingClient?.segundoNombre} />
+                  <Input id="apellido" name="apellido" placeholder="Apellido..." required defaultValue={editingClient?.apellido}/>
+                  <Input id="segundo-apellido" name="segundo-apellido" placeholder="Segundo apellido..." defaultValue={editingClient?.segundoApellido} />
+                  <Input id="phone" name="phone" placeholder="Teléfono..." required defaultValue={editingClient?.phone} />
+                  <Input id="cedula" name="cedula" placeholder="Cédula..." required defaultValue={editingClient?.cedula} />
+                  <Select name="sexo" required defaultValue={editingClient?.sexo}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un sexo..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="femenino">Femenino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select name="estado-civil" required defaultValue={editingClient?.estadoCivil}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Estado civil..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="soltero">Soltero/a</SelectItem>
+                      <SelectItem value="casado">Casado/a</SelectItem>
+                      <SelectItem value="viudo">Viudo/a</SelectItem>
+                      <SelectItem value="divorciado">Divorciado/a</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                <Separator className="my-4" />
+                <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
+                
+                  <Select name="departamento" onValueChange={handleDepartmentChange} defaultValue={editingClient?.departamento || "Chinandega"}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un departamento..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nicaraguaData.map(d => (
+                        <SelectItem key={d.departamento} value={d.departamento}>{d.departamento}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select name="municipio" disabled={!selectedDepartment && !editingClient} onValueChange={handleMunicipalityChange} defaultValue={editingClient?.municipio}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un municipio..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {municipalities.map(m => (
+                        <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select name="comunidad" disabled={!selectedMunicipality && !editingClient} defaultValue={editingClient?.comunidad}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione una comunidad..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {communities.map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input id="direccion" name="direccion" placeholder="Dirección..." required defaultValue={editingClient?.direccion}/>
+
+                <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
+                        {isGettingLocation ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <MapPin className="h-4 w-4" />
+                        )}
+                        GPS
+                    </Button>
+                    { (location || locationError) &&
+                        <div className="flex-1">
+                            {location && <p className="text-sm text-green-600">{location}</p>}
+                            {locationError && <p className="text-sm text-destructive">{locationError}</p>}
+                        </div>
+                    }
+                </div>
+
+                <Separator className="my-4" />
+                <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
+
+                <Input id="actividad-economica" name="actividad-economica" placeholder="Actividad Económica..." defaultValue={editingClient?.actividadEconomica} />
+                <Input id="profesion" name="profesion" placeholder="Profesión..." defaultValue={editingClient?.profesion} />
+                <Input id="centro-trabajo" name="centro-trabajo" placeholder="Centro de trabajo..." defaultValue={editingClient?.centroTrabajo} />
+                <Input id="direccion-trabajo" name="direccion-trabajo" placeholder="Dirección de trabajo..." defaultValue={editingClient?.direccionTrabajo} />
+              </div>
+            </form>
+          </div>
+          <DialogFooter className="p-6 pt-0">
+            <Button type="submit" form="client-form" className="w-full">
+              {isEditing ? 'Guardar Cambios' : 'Guardar Cliente'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalles del Cliente</DialogTitle>
+            <DialogDescription>
+              Información completa del cliente seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-primary">Información Personal</h4>
+                <DetailRow icon={User} label="Nombre Completo" value={`${selectedClient.primerNombre} ${selectedClient.segundoNombre || ''} ${selectedClient.apellido} ${selectedClient.segundoApellido || ''}`} />
+                <DetailRow icon={FileText} label="Cédula" value={selectedClient.cedula} />
+                <DetailRow icon={Phone} label="Teléfono" value={selectedClient.phone} />
+                <DetailRow icon={User} label="Sexo" value={selectedClient.sexo} />
+                <DetailRow icon={User} label="Estado Civil" value={selectedClient.estadoCivil} />
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <h4 className="font-semibold text-primary">Ubicación</h4>
+                <DetailRow icon={MapIcon} label="Departamento" value={selectedClient.departamento} />
+                <DetailRow icon={MapIcon} label="Municipio" value={selectedClient.municipio} />
+                <DetailRow icon={MapIcon} label="Comunidad" value={selectedClient.comunidad} />
+                <DetailRow icon={MapIcon} label="Dirección" value={selectedClient.direccion} />
+                <DetailRow icon={MapPin} label="Coordenadas GPS" value={selectedClient.location} />
+              </div>
+              <Separator />
+               <div className="space-y-2">
+                <h4 className="font-semibold text-primary">Información Laboral</h4>
+                 <DetailRow icon={Briefcase} label="Actividad Económica" value={selectedClient.actividadEconomica} />
+                 <DetailRow icon={Briefcase} label="Profesión" value={selectedClient.profesion} />
+                 <DetailRow icon={Building} label="Centro de Trabajo" value={selectedClient.centroTrabajo} />
+                 <DetailRow icon={MapIcon} label="Dirección del Trabajo" value={selectedClient.direccionTrabajo} />
+               </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsDetailsOpen(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
