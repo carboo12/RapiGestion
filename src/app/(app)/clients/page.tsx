@@ -88,19 +88,9 @@ export default function ClientsPage() {
       const clientSnapshot = await getDocs(clientsCol);
       const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
       setClients(clientList);
-      if (clientList.length === 0) {
-        toast({
-          title: "Información",
-          description: "No hay clientes registrados para mostrar.",
-        });
-      }
     } catch (error) {
       console.error("Error fetching clients: ", error);
-      toast({
-        title: "Error de Carga",
-        description: "No se pudieron cargar los clientes.",
-        variant: "destructive",
-      });
+      // No toast on error, just show an empty table.
     }
   };
 
@@ -293,8 +283,8 @@ export default function ClientsPage() {
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6">
-          <form id="add-client-form" onSubmit={handleAddClient}>
+        <div className="flex-1 overflow-y-auto">
+          <form id="add-client-form" onSubmit={handleAddClient} className="px-6">
             <div className="space-y-4 py-4">
                 <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required />
                 <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." />
@@ -392,3 +382,5 @@ export default function ClientsPage() {
     </Dialog>
   )
 }
+
+    
