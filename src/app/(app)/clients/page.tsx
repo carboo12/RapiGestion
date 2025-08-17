@@ -47,6 +47,11 @@ const clients = [
   { id: 'CUST-005', name: 'Sarah Miller', phone: '+1-202-555-0176', address: '1415 Birch St, Springfield', email: 'sarah.m@example.com' },
 ];
 
+interface Municipality {
+  nombre: string;
+  comunidades: string[];
+}
+
 export default function ClientsPage() {
   const [open, setOpen] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
@@ -54,10 +59,12 @@ export default function ClientsPage() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   
   const [selectedDepartment, setSelectedDepartment] = useState('Chinandega');
-  const [municipalities, setMunicipalities] = useState<string[]>(() => {
+  const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null);
+  const [municipalities, setMunicipalities] = useState<Municipality[]>(() => {
       const chinandega = nicaraguaData.find(d => d.departamento === 'Chinandega');
       return chinandega ? chinandega.municipios : [];
   });
+  const [communities, setCommunities] = useState<string[]>([]);
   
   const { toast } = useToast();
 
@@ -116,7 +123,16 @@ export default function ClientsPage() {
   const handleDepartmentChange = (value: string) => {
     setSelectedDepartment(value);
     const department = nicaraguaData.find(d => d.departamento === value);
-    setMunicipalities(department ? department.municipios : []);
+    const newMunicipalities = department ? department.municipios : [];
+    setMunicipalities(newMunicipalities);
+    setSelectedMunicipality(null);
+    setCommunities([]);
+  }
+
+  const handleMunicipalityChange = (value: string) => {
+    setSelectedMunicipality(value);
+    const municipality = municipalities.find(m => m.nombre === value);
+    setCommunities(municipality ? municipality.comunidades : []);
   }
 
 
@@ -193,8 +209,8 @@ export default function ClientsPage() {
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-4 px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-2">
+          <div className="space-y-4 py-4 px-4">
               <Input id="primer-nombre" placeholder="Primer nombre..." />
               <Input id="segundo-nombre" placeholder="Segundo nombre..." />
               <Input id="apellido" placeholder="Apellido..." />
@@ -235,22 +251,24 @@ export default function ClientsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select disabled={!selectedDepartment}>
+              <Select disabled={!selectedDepartment} onValueChange={handleMunicipalityChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione un municipio..." />
                 </SelectTrigger>
                 <SelectContent>
                    {municipalities.map(m => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                    <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select>
+              <Select disabled={!selectedMunicipality}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione una comunidad..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Add community options here */}
+                  {communities.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Input id="direccion" placeholder="Dirección..." />
