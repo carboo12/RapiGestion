@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import packageJson from "../../../../package.json";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import Link from "next/link";
+import { Landmark } from "lucide-react";
 
 const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -20,23 +22,6 @@ const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
     fill="currentColor"
   >
     <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 202.6c-25.2 0-45.7 20.5-45.7 45.7s20.5 45.7 45.7 45.7s45.7-20.5 45.7-45.7s-20.5-45.7-45.7-45.7zM342.2 202.6c-25.2 0-45.7 20.5-45.7 45.7s20.5 45.7 45.7 45.7s45.7-20.5 45.7-45.7s-20.5-45.7-45.7-45.7zM256 395.4c-70.1 0-131.2-44.1-158.4-107.9C121.2 232.5 182.2 192 256 192s134.8 40.5 158.4 105.5c-27.2 63.8-88.3 107.9-158.4 107.9z" />
-  </svg>
-);
-
-const CobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z" />
-    <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-    <path d="m15 13 2 2 4-4" />
   </svg>
 );
 
@@ -113,12 +98,14 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid grid-cols-2 gap-4">
-        <Card className="border-primary border-2 rounded-2xl">
-          <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center">
-            <CobradosIcon className="w-12 h-12 text-primary" />
-            <p className="font-semibold text-primary">Cobrados</p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/cobrados" className="block">
+          <Card className="border-primary border-2 rounded-2xl hover:bg-accent transition-colors">
+            <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center">
+              <Landmark className="w-12 h-12 text-primary" />
+              <p className="font-semibold text-primary">Cobrados</p>
+            </CardContent>
+          </Card>
+        </Link>
         <Card className="border-destructive border-2 rounded-2xl">
           <CardContent className="flex flex-col items-center justify-center p-4 space-y-2 text-center">
             <NoCobradosIcon className="w-12 h-12 text-destructive" />
