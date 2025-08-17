@@ -96,7 +96,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }, 30 * 60 * 1000); // 30 minutos
     };
 
-    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, resetTimer));
     resetTimer();
 
