@@ -4,11 +4,12 @@ import { UserNav } from '@/components/user-nav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import Loading from '../loading';
 
 const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -37,6 +38,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const router = useRouter();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   const handleSignOut = useCallback(() => {
     const auth = getAuth(app);
@@ -57,6 +60,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         })
       });
   }, [router, toast]);
+
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+        router.push('/');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
 
   useEffect(() => {
@@ -87,6 +106,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, [handleSignOut]);
 
+  if (loading || !user) {
+    return <Loading />;
+  }
 
   return (
       <div className="flex flex-col h-screen">
