@@ -17,6 +17,7 @@ import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { app } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import { Logo } from "@/components/logo";
 
 
 export default function LoginPage() {
@@ -54,7 +55,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm mx-auto">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">
-            <Image src="https://placehold.co/100x100.png" alt="Company Logo" width={64} height={64} className="w-16 h-16 text-primary" data-ai-hint="logo" />
+            <Logo className="w-16 h-16 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold">RapiGestion</CardTitle>
           <CardDescription>

@@ -14,6 +14,7 @@ import { es } from "date-fns/locale";
 import Link from "next/link";
 import { Landmark } from "lucide-react";
 import Image from "next/image";
+import { Logo } from "@/components/logo";
 
 const NoCobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -78,7 +79,7 @@ export default function DashboardPage() {
       
       <Card className="border-primary border-2 rounded-2xl shadow-lg">
         <CardContent className="flex flex-col items-center text-center p-6 space-y-3">
-          <Image src="https://placehold.co/100x100.png" alt="Company Logo" width={80} height={80} className="w-20 h-20 text-primary" data-ai-hint="logo" />
+          <Logo className="w-20 h-20 text-primary" />
           <h3 className="text-2xl font-bold text-primary">{userName || 'Cargando...'}</h3>
           <p className="text-muted-foreground">Que tengas un buen día!</p>
           <p className="text-sm text-muted-foreground">{currentDate || 'Cargando fecha...'}</p>

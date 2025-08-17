@@ -11,6 +11,7 @@ import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Loading from '../loading';
 import Image from 'next/image';
+import { Logo } from '@/components/logo';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
@@ -101,7 +102,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
             <Button asChild variant="ghost" className="h-10 gap-2 px-2 text-base font-bold">
               <Link href="/dashboard">
-                <Image src="https://placehold.co/100x100.png" alt="logo" width={24} height={24} className="size-6 shrink-0 text-primary" data-ai-hint="logo" />
+                <Logo className="size-6 shrink-0 text-primary" />
                 <span className="hidden sm:inline">
                   RapiGestion
                 </span>
