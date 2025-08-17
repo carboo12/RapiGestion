@@ -34,8 +34,10 @@ const clients = [
 export default function ClientsPage() {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div>
         <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
+      </div>
+      <div>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" /> Agregar Cliente
         </Button>
