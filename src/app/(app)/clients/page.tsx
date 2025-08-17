@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, PlusCircle, MapPin, Loader2 } from "lucide-react"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -38,14 +38,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { nicaraguaData } from "@/lib/nicaragua-data";
+import { app } from "@/lib/firebase";
+import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
 
-const clients = [
-  { id: 'CUST-001', name: 'Alice Johnson', phone: '+1-202-555-0191', address: '1234 Elm St, Springfield', email: 'alice.j@example.com' },
-  { id: 'CUST-002', name: 'Robert Brown', phone: '+1-202-555-0154', address: '5678 Oak St, Springfield', email: 'robert.b@example.com' },
-  { id: 'CUST-003', name: 'Emily Davis', phone: '+1-202-555-0129', address: '9101 Pine St, Springfield', email: 'emily.d@example.com' },
-  { id: 'CUST-004', name: 'Michael Wilson', phone: '+1-202-555-0188', address: '1213 Maple St, Springfield', email: 'michael.w@example.com' },
-  { id: 'CUST-005', name: 'Sarah Miller', phone: '+1-202-555-0176', address: '1415 Birch St, Springfield', email: 'sarah.m@example.com' },
-];
+
+interface Client {
+  id: string;
+  primerNombre: string;
+  segundoNombre?: string;
+  apellido: string;
+  segundoApellido?: string;
+  phone: string;
+  cedula: string;
+  sexo: string;
+  estadoCivil: string;
+  departamento: string;
+  municipio: string;
+  comunidad: string;
+  direccion: string;
+  email?: string; // Adding email to match table display
+}
 
 interface Municipality {
   nombre: string;
@@ -53,6 +65,7 @@ interface Municipality {
 }
 
 export default function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([]);
   const [open, setOpen] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -67,6 +80,27 @@ export default function ClientsPage() {
   const [communities, setCommunities] = useState<string[]>([]);
   
   const { toast } = useToast();
+
+  const fetchClients = async () => {
+    try {
+      const db = getFirestore(app);
+      const clientsCol = collection(db, 'clients');
+      const clientSnapshot = await getDocs(clientsCol);
+      const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+      setClients(clientList);
+    } catch (error) {
+      console.error("Error fetching clients: ", error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los clientes.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -135,6 +169,50 @@ export default function ClientsPage() {
     setCommunities(municipality ? municipality.comunidades : []);
   }
 
+  const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newClient = {
+      primerNombre: formData.get('primer-nombre') as string,
+      segundoNombre: formData.get('segundo-nombre') as string,
+      apellido: formData.get('apellido') as string,
+      segundoApellido: formData.get('segundo-apellido') as string,
+      phone: formData.get('phone') as string,
+      cedula: formData.get('cedula') as string,
+      sexo: formData.get('sexo') as string,
+      estadoCivil: formData.get('estado-civil') as string,
+      departamento: formData.get('departamento') as string,
+      municipio: formData.get('municipio') as string,
+      comunidad: formData.get('comunidad') as string,
+      direccion: formData.get('direccion') as string,
+      location: location,
+      actividadEconomica: formData.get('actividad-economica') as string,
+      profesion: formData.get('profesion') as string,
+      centroTrabajo: formData.get('centro-trabajo') as string,
+      direccionTrabajo: formData.get('direccion-trabajo') as string,
+    };
+
+    try {
+      const db = getFirestore(app);
+      const docRef = await addDoc(collection(db, "clients"), newClient);
+      toast({
+        title: "Éxito",
+        description: "Cliente agregado correctamente.",
+      });
+      setClients([...clients, { id: docRef.id, ...newClient }]);
+      setOpen(false);
+      e.currentTarget.reset();
+      setLocation(null);
+    } catch (error) {
+      console.error("Error adding client: ", error);
+      toast({
+        title: "Error al agregar cliente",
+        description: "No se pudo guardar el cliente en la base de datos.",
+        variant: "destructive",
+      });
+    }
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -174,11 +252,11 @@ export default function ClientsPage() {
               <TableBody>
                 {clients.map((client) => (
                   <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.id}</TableCell>
-                    <TableCell>{client.name}</TableCell>
-                    <TableCell>{client.email}</TableCell>
+                    <TableCell className="font-medium">{client.id.substring(0,8).toUpperCase()}</TableCell>
+                    <TableCell>{`${client.primerNombre} ${client.apellido}`}</TableCell>
+                    <TableCell>{client.email || 'N/A'}</TableCell>
                     <TableCell>{client.phone}</TableCell>
-                    <TableCell>{client.address}</TableCell>
+                    <TableCell>{client.direccion}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -210,97 +288,99 @@ export default function ClientsPage() {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
-          <div className="space-y-4 py-4">
-              <Input id="primer-nombre" placeholder="Primer nombre..." />
-              <Input id="segundo-nombre" placeholder="Segundo nombre..." />
-              <Input id="apellido" placeholder="Apellido..." />
-              <Input id="segundo-apellido" placeholder="Segundo apellido..." />
-              <Input id="phone" placeholder="Teléfono..." />
-              <Input id="cedula" placeholder="Cédula..." />
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un sexo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="masculino">Masculino</SelectItem>
-                  <SelectItem value="femenino">Femenino</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Estado civil..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="soltero">Soltero/a</SelectItem>
-                  <SelectItem value="casado">Casado/a</SelectItem>
-                  <SelectItem value="viudo">Viudo/a</SelectItem>
-                  <SelectItem value="divorciado">Divorciado/a</SelectItem>
-                </SelectContent>
-              </Select>
+          <form id="add-client-form" onSubmit={handleAddClient}>
+            <div className="space-y-4 py-4">
+                <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required />
+                <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." />
+                <Input id="apellido" name="apellido" placeholder="Apellido..." required />
+                <Input id="segundo-apellido" name="segundo-apellido" placeholder="Segundo apellido..." />
+                <Input id="phone" name="phone" placeholder="Teléfono..." required />
+                <Input id="cedula" name="cedula" placeholder="Cédula..." required />
+                <Select name="sexo" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un sexo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem>
+                    <SelectItem value="femenino">Femenino</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select name="estado-civil" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Estado civil..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="soltero">Soltero/a</SelectItem>
+                    <SelectItem value="casado">Casado/a</SelectItem>
+                    <SelectItem value="viudo">Viudo/a</SelectItem>
+                    <SelectItem value="divorciado">Divorciado/a</SelectItem>
+                  </SelectContent>
+                </Select>
 
-            <Separator className="my-4" />
-            <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
-            
-              <Select onValueChange={handleDepartmentChange} defaultValue="Chinandega">
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un departamento..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {nicaraguaData.map(d => (
-                    <SelectItem key={d.departamento} value={d.departamento}>{d.departamento}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select disabled={!selectedDepartment} onValueChange={handleMunicipalityChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un municipio..." />
-                </SelectTrigger>
-                <SelectContent>
-                   {municipalities.map(m => (
-                    <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select disabled={!selectedMunicipality}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione una comunidad..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {communities.map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input id="direccion" placeholder="Dirección..." />
+              <Separator className="my-4" />
+              <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
+              
+                <Select name="departamento" onValueChange={handleDepartmentChange} defaultValue="Chinandega">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un departamento..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {nicaraguaData.map(d => (
+                      <SelectItem key={d.departamento} value={d.departamento}>{d.departamento}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select name="municipio" disabled={!selectedDepartment} onValueChange={handleMunicipalityChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un municipio..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {municipalities.map(m => (
+                      <SelectItem key={m.nombre} value={m.nombre}>{m.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select name="comunidad" disabled={!selectedMunicipality}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione una comunidad..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {communities.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input id="direccion" name="direccion" placeholder="Dirección..." required/>
 
-             <div className="flex items-center gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
-                    {isGettingLocation ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <MapPin className="h-4 w-4" />
-                    )}
-                    GPS
-                </Button>
-                { (location || locationError) &&
-                    <div className="flex-1">
-                        {location && <p className="text-sm text-green-600">{location}</p>}
-                        {locationError && <p className="text-sm text-destructive">{locationError}</p>}
-                    </div>
-                }
+              <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
+                      {isGettingLocation ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                          <MapPin className="h-4 w-4" />
+                      )}
+                      GPS
+                  </Button>
+                  { (location || locationError) &&
+                      <div className="flex-1">
+                          {location && <p className="text-sm text-green-600">{location}</p>}
+                          {locationError && <p className="text-sm text-destructive">{locationError}</p>}
+                      </div>
+                  }
+              </div>
+
+              <Separator className="my-4" />
+              <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
+
+              <Input id="actividad-economica" name="actividad-economica" placeholder="Actividad Económica..." />
+              <Input id="profesion" name="profesion" placeholder="Profesión..." />
+              <Input id="centro-trabajo" name="centro-trabajo" placeholder="Centro de trabajo..." />
+              <Input id="direccion-trabajo" name="direccion-trabajo" placeholder="Dirección de trabajo..." />
             </div>
-
-            <Separator className="my-4" />
-            <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
-
-            <Input id="actividad-economica" placeholder="Actividad Económica..." />
-            <Input id="profesion" placeholder="Profesión..." />
-            <Input id="centro-trabajo" placeholder="Centro de trabajo..." />
-            <Input id="direccion-trabajo" placeholder="Dirección de trabajo..." />
-          </div>
+          </form>
         </div>
         <DialogFooter className="p-6 pt-0">
-          <Button type="submit" className="w-full" onClick={() => setOpen(false)}>Guardar Cliente</Button>
+          <Button type="submit" form="add-client-form" className="w-full">Guardar Cliente</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
