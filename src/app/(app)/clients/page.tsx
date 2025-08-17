@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { nicaraguaData } from "@/lib/nicaragua-data";
 import { app } from "@/lib/firebase";
 import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 
 interface Client {
@@ -56,7 +57,8 @@ interface Client {
   municipio: string;
   comunidad: string;
   direccion: string;
-  email?: string; // Adding email to match table display
+  email?: string;
+  createdBy?: string;
 }
 
 interface Municipality {
@@ -166,6 +168,19 @@ export default function ClientsPage() {
 
   const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    const auth = getAuth(app);
+    const user = auth.currentUser;
+
+    if (!user) {
+      toast({
+        title: "Error de autenticación",
+        description: "Debes iniciar sesión para agregar un cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     const newClient = {
       primerNombre: formData.get('primer-nombre') as string,
@@ -185,6 +200,7 @@ export default function ClientsPage() {
       profesion: formData.get('profesion') as string,
       centroTrabajo: formData.get('centro-trabajo') as string,
       direccionTrabajo: formData.get('direccion-trabajo') as string,
+      createdBy: user.uid,
     };
 
     try {
@@ -245,6 +261,11 @@ export default function ClientsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {clients.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center">No hay clientes registrados.</TableCell>
+                  </TableRow>
+                )}
                 {clients.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">{client.id.substring(0,8).toUpperCase()}</TableCell>
@@ -275,15 +296,15 @@ export default function ClientsPage() {
           </CardContent>
         </Card>
       </div>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
           <DialogDescription>
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto">
-          <form id="add-client-form" onSubmit={handleAddClient} className="px-6">
+        <div className="flex-1 overflow-y-auto px-6">
+          <form id="add-client-form" onSubmit={handleAddClient}>
             <div className="space-y-4 py-4">
                 <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required />
                 <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." />
