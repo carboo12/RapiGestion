@@ -114,14 +114,14 @@ export default function ClientsPage() {
           </CardContent>
         </Card>
       </div>
-      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-0">
           <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
           <DialogDescription>
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-4">
+        <div className="flex-1 overflow-y-auto px-6">
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="primer-nombre" className="text-right">
@@ -191,7 +191,7 @@ export default function ClientsPage() {
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-0">
           <Button type="submit" onClick={() => setOpen(false)}>Guardar Cliente</Button>
         </DialogFooter>
       </DialogContent>
