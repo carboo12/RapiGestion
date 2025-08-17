@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText, Trash2, Users, Handshake, Gem } from "lucide-react"
+import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText, FolderKanban } from "lucide-react"
 import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
@@ -41,23 +41,8 @@ import { app } from "@/lib/firebase";
 import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "next/navigation";
 
-
-interface Reference {
-  id: string;
-  nombreCompleto: string;
-  telefono: string;
-  direccion: string;
-  parentesco: string;
-}
-
-interface Guarantee {
-  id: string;
-  tipoGarantia: string;
-  valor: string;
-  detalle: string;
-}
 
 interface Client {
   id: string;
@@ -79,8 +64,6 @@ interface Client {
   centroTrabajo?: string;
   direccionTrabajo?: string;
   createdBy?: string;
-  references?: Reference[];
-  guarantees?: Guarantee[];
 }
 
 interface Municipality {
@@ -111,6 +94,7 @@ export default function ClientsPage() {
   const formRef = useRef<HTMLFormElement>(null);
   
   const { toast } = useToast();
+  const router = useRouter();
 
   const fetchClients = async () => {
     try {
@@ -223,6 +207,10 @@ export default function ClientsPage() {
     setSelectedClient(client);
     setIsDetailsOpen(true);
   }
+  
+  const handleViewExpediente = (client: Client) => {
+    router.push(`/clients/${client.id}`);
+  }
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -240,7 +228,7 @@ export default function ClientsPage() {
     }
 
     const formData = new FormData(e.currentTarget);
-    const clientData: Omit<Client, 'id' | 'references' | 'guarantees'> = {
+    const clientData: Omit<Client, 'id'> = {
       primerNombre: formData.get('primer-nombre') as string,
       segundoNombre: formData.get('segundo-nombre') as string,
       apellido: formData.get('apellido') as string,
@@ -281,8 +269,6 @@ export default function ClientsPage() {
       } else {
         const newClientData = {
           ...clientData,
-          references: [],
-          guarantees: [],
         };
         const docRef = await addDoc(collection(db, "clients"), newClientData);
         setClients([...clients, { id: docRef.id, ...newClientData }]);
@@ -377,7 +363,7 @@ export default function ClientsPage() {
                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => handleViewDetails(client)}>Ver Detalles</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleOpenDialog(client)}>Editar Cliente</DropdownMenuItem>
-                            <DropdownMenuItem>Ver Garantías</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewExpediente(client)}>Expediente</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -506,11 +492,10 @@ export default function ClientsPage() {
           {selectedClient && (
             <div className="flex-1 overflow-y-auto px-1">
               <Tabs defaultValue="personal" className="w-full p-5">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="personal"><User className="mr-2"/>Personal</TabsTrigger>
                   <TabsTrigger value="location"><MapIcon className="mr-2"/>Ubicación</TabsTrigger>
                   <TabsTrigger value="work"><Briefcase className="mr-2"/>Laboral</TabsTrigger>
-                  <TabsTrigger value="more"><PlusCircle className="mr-2"/>Más</TabsTrigger>
                 </TabsList>
                 <TabsContent value="personal">
                    <div className="space-y-4 py-4">
@@ -537,39 +522,6 @@ export default function ClientsPage() {
                       <DetailRow icon={Building} label="Centro de Trabajo" value={selectedClient.centroTrabajo} />
                       <DetailRow icon={MapIcon} label="Dirección del Trabajo" value={selectedClient.direccionTrabajo} />
                     </div>
-                </TabsContent>
-                 <TabsContent value="more">
-                    <Tabs defaultValue="references" className="w-full py-4">
-                       <TabsList className="grid w-full grid-cols-2">
-                         <TabsTrigger value="references"><Handshake className="mr-2"/>Referencias</TabsTrigger>
-                         <TabsTrigger value="guarantees"><Gem className="mr-2"/>Garantías</TabsTrigger>
-                       </TabsList>
-                       <TabsContent value="references">
-                          <div className="space-y-2 py-4">
-                           {(selectedClient.references && selectedClient.references.length > 0) ? (
-                            selectedClient.references.map(ref => (
-                              <Card key={ref.id} className="p-4">
-                                <p className="font-semibold">{ref.nombreCompleto} <span className="font-normal text-muted-foreground">({ref.parentesco})</span></p>
-                                <p className="text-sm text-muted-foreground">{ref.direccion}</p>
-                                <p className="text-sm text-muted-foreground">Tel: {ref.telefono}</p>
-                              </Card>
-                            ))
-                           ) : <p className="text-center text-muted-foreground py-4">No hay referencias registradas.</p>}
-                          </div>
-                       </TabsContent>
-                       <TabsContent value="guarantees">
-                         <div className="space-y-2 py-4">
-                          {(selectedClient.guarantees && selectedClient.guarantees.length > 0) ? (
-                             selectedClient.guarantees.map(guarantee => (
-                              <Card key={guarantee.id} className="p-4">
-                                <p className="font-semibold">{guarantee.tipoGarantia} - <span className="text-primary">{guarantee.valor}</span></p>
-                                <p className="text-sm text-muted-foreground">{guarantee.detalle}</p>
-                              </Card>
-                            ))
-                          ) : <p className="text-center text-muted-foreground py-4">No hay garantías registradas.</p>}
-                         </div>
-                       </TabsContent>
-                    </Tabs>
                 </TabsContent>
               </Tabs>
             </div>
