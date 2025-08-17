@@ -190,7 +190,7 @@ export default function ClientsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
-                          <DropdownMenuItem>Editar Cliente</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setOpen(true)}>Editar Cliente</DropdownMenuItem>
                           <DropdownMenuItem>Ver Garantías</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -209,8 +209,8 @@ export default function ClientsPage() {
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-2">
-          <div className="space-y-4 py-4 px-4">
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="space-y-4 py-4">
               <Input id="primer-nombre" placeholder="Primer nombre..." />
               <Input id="segundo-nombre" placeholder="Segundo nombre..." />
               <Input id="apellido" placeholder="Apellido..." />
