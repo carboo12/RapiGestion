@@ -67,10 +67,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
-        setLoading(false);
       } else {
+        setUser(null);
         router.push('/');
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -78,40 +79,42 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 
   useEffect(() => {
-    let activityTimer: NodeJS.Timeout;
+    if (user) { // Only set up inactivity timer if user is logged in
+        let activityTimer: NodeJS.Timeout;
 
-    const resetTimer = () => {
-      clearTimeout(activityTimer);
-      activityTimer = setTimeout(() => {
-         const auth = getAuth(app);
-         if (auth.currentUser) {
-            signOut(auth).then(() => {
-                toast({
-                    title: "Sesión cerrada por inactividad",
-                    description: "Tu sesión ha sido cerrada automáticamente.",
+        const resetTimer = () => {
+          clearTimeout(activityTimer);
+          activityTimer = setTimeout(() => {
+             const auth = getAuth(app);
+             if (auth.currentUser) {
+                signOut(auth).then(() => {
+                    toast({
+                        title: "Sesión cerrada por inactividad",
+                        description: "Tu sesión ha sido cerrada automáticamente.",
+                    });
+                    router.push('/');
                 });
-                router.push('/');
-            });
-         }
-      }, 30 * 60 * 1000); // 30 minutos
-    };
+             }
+          }, 30 * 60 * 1000); // 30 minutos
+        };
 
-    const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-    events.forEach(event => window.addEventListener(event, resetTimer));
-    resetTimer();
+        const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+        events.forEach(event => window.addEventListener(event, resetTimer));
+        resetTimer();
 
-    return () => {
-      clearTimeout(activityTimer);
-      events.forEach(event => window.removeEventListener(event, resetTimer));
-    };
-  }, [router, toast]);
+        return () => {
+          clearTimeout(activityTimer);
+          events.forEach(event => window.removeEventListener(event, resetTimer));
+        };
+    }
+  }, [user, router, toast]);
 
   if (loading) {
     return <Loading />;
   }
   
   if (!user) {
-    return null; // O un componente de carga, mientras redirige
+    return null; // Or a loading component, while redirecting
   }
 
 
