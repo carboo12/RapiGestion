@@ -39,7 +39,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { nicaraguaData } from "@/lib/nicaragua-data";
 import { app } from "@/lib/firebase";
-import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 
@@ -57,7 +57,11 @@ interface Client {
   municipio: string;
   comunidad: string;
   direccion: string;
-  email?: string;
+  location?: string | null;
+  actividadEconomica?: string;
+  profesion?: string;
+  centroTrabajo?: string;
+  direccionTrabajo?: string;
   createdBy?: string;
 }
 
@@ -69,6 +73,9 @@ interface Municipality {
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [open, setOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+
   const [location, setLocation] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -100,6 +107,19 @@ export default function ClientsPage() {
     fetchClients();
   }, []);
 
+  useEffect(() => {
+    if (editingClient) {
+      const department = nicaraguaData.find(d => d.departamento === editingClient.departamento);
+      const newMunicipalities = department ? department.municipios : [];
+      setMunicipalities(newMunicipalities);
+
+      const municipality = newMunicipalities.find(m => m.nombre === editingClient.municipio);
+      setCommunities(municipality ? municipality.comunidades : []);
+
+      setLocation(editingClient.location || null);
+    }
+  }, [editingClient])
+  
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       setLocationError("La geolocalización no es compatible con este navegador.");
@@ -167,7 +187,18 @@ export default function ClientsPage() {
     setCommunities(municipality ? municipality.comunidades : []);
   }
 
-  const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleOpenDialog = (clientToEdit: Client | null) => {
+    if (clientToEdit) {
+      setEditingClient(clientToEdit);
+      setIsEditing(true);
+    } else {
+      setEditingClient(null);
+      setIsEditing(false);
+    }
+    setOpen(true);
+  }
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     const auth = getAuth(app);
@@ -176,14 +207,14 @@ export default function ClientsPage() {
     if (!user) {
       toast({
         title: "Error de autenticación",
-        description: "Debes iniciar sesión para agregar un cliente.",
+        description: "Debes iniciar sesión para realizar esta acción.",
         variant: "destructive",
       });
       return;
     }
 
     const formData = new FormData(e.currentTarget);
-    const newClient = {
+    const clientData = {
       primerNombre: formData.get('primer-nombre') as string,
       segundoNombre: formData.get('segundo-nombre') as string,
       apellido: formData.get('apellido') as string,
@@ -201,27 +232,41 @@ export default function ClientsPage() {
       profesion: formData.get('profesion') as string,
       centroTrabajo: formData.get('centro-trabajo') as string,
       direccionTrabajo: formData.get('direccion-trabajo') as string,
-      createdBy: user.uid,
+      createdBy: isEditing ? editingClient?.createdBy : user.uid,
     };
 
     try {
       const db = getFirestore(app);
-      const docRef = await addDoc(collection(db, "clients"), newClient);
-      toast({
-        title: "Éxito",
-        description: "Cliente agregado correctamente.",
-      });
-      setClients([...clients, { id: docRef.id, ...newClient }]);
+      if (isEditing && editingClient) {
+        const clientRef = doc(db, "clients", editingClient.id);
+        await setDoc(clientRef, clientData, { merge: true });
+
+        setClients(clients.map(c => c.id === editingClient.id ? { id: editingClient.id, ...clientData } : c));
+        toast({
+          title: "Éxito",
+          description: "Cliente actualizado correctamente.",
+        });
+
+      } else {
+        const docRef = await addDoc(collection(db, "clients"), clientData);
+        setClients([...clients, { id: docRef.id, ...clientData }]);
+        toast({
+          title: "Éxito",
+          description: "Cliente agregado correctamente.",
+        });
+      }
+
       if (formRef.current) {
         formRef.current.reset();
       }
       setLocation(null);
       setOpen(false);
+
     } catch (error) {
-      console.error("Error adding client: ", error);
+      console.error("Error saving client: ", error);
       toast({
-        title: "Error al agregar cliente",
-        description: "No se pudo guardar el cliente en la base de datos.",
+        title: `Error al ${isEditing ? 'actualizar' : 'agregar'} cliente`,
+        description: `No se pudo guardar el cliente en la base de datos.`,
         variant: "destructive",
       });
     }
@@ -235,11 +280,9 @@ export default function ClientsPage() {
           <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
         </div>
         <div>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Agregar Cliente
-            </Button>
-          </DialogTrigger>
+          <Button onClick={() => handleOpenDialog(null)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Agregar Cliente
+          </Button>
         </div>
 
         <Card>
@@ -255,7 +298,6 @@ export default function ClientsPage() {
                 <TableRow>
                   <TableHead>ID de Cliente</TableHead>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Correo</TableHead>
                   <TableHead>Teléfono</TableHead>
                   <TableHead>Dirección</TableHead>
                   <TableHead>
@@ -266,14 +308,13 @@ export default function ClientsPage() {
               <TableBody>
                 {clients.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">No hay clientes registrados.</TableCell>
+                    <TableCell colSpan={5} className="text-center">No hay clientes registrados.</TableCell>
                   </TableRow>
                 )}
                 {clients.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">{client.id.substring(0,8).toUpperCase()}</TableCell>
                     <TableCell>{`${client.primerNombre} ${client.apellido}`}</TableCell>
-                    <TableCell>{client.email || 'N/A'}</TableCell>
                     <TableCell>{client.phone}</TableCell>
                     <TableCell>{client.direccion}</TableCell>
                     <TableCell>
@@ -287,7 +328,7 @@ export default function ClientsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setOpen(true)}>Editar Cliente</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleOpenDialog(client)}>Editar Cliente</DropdownMenuItem>
                           <DropdownMenuItem>Ver Garantías</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -301,21 +342,21 @@ export default function ClientsPage() {
       </div>
       <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}</DialogTitle>
           <DialogDescription>
-            Rellena la información para registrar a un nuevo cliente en el sistema.
+            {isEditing ? 'Actualiza la información del cliente.' : 'Rellena la información para registrar a un nuevo cliente en el sistema.'}
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
-          <form id="add-client-form" ref={formRef} onSubmit={handleAddClient}>
+          <form id="client-form" ref={formRef} onSubmit={handleFormSubmit}>
             <div className="space-y-4 py-4">
-                <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required />
-                <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." />
-                <Input id="apellido" name="apellido" placeholder="Apellido..." required />
-                <Input id="segundo-apellido" name="segundo-apellido" placeholder="Segundo apellido..." />
-                <Input id="phone" name="phone" placeholder="Teléfono..." required />
-                <Input id="cedula" name="cedula" placeholder="Cédula..." required />
-                <Select name="sexo" required>
+                <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required defaultValue={editingClient?.primerNombre} />
+                <Input id="segundo-nombre" name="segundo-nombre" placeholder="Segundo nombre..." defaultValue={editingClient?.segundoNombre} />
+                <Input id="apellido" name="apellido" placeholder="Apellido..." required defaultValue={editingClient?.apellido}/>
+                <Input id="segundo-apellido" name="segundo-apellido" placeholder="Segundo apellido..." defaultValue={editingClient?.segundoApellido} />
+                <Input id="phone" name="phone" placeholder="Teléfono..." required defaultValue={editingClient?.phone} />
+                <Input id="cedula" name="cedula" placeholder="Cédula..." required defaultValue={editingClient?.cedula} />
+                <Select name="sexo" required defaultValue={editingClient?.sexo}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione un sexo..." />
                   </SelectTrigger>
@@ -324,7 +365,7 @@ export default function ClientsPage() {
                     <SelectItem value="femenino">Femenino</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select name="estado-civil" required>
+                <Select name="estado-civil" required defaultValue={editingClient?.estadoCivil}>
                   <SelectTrigger>
                     <SelectValue placeholder="Estado civil..." />
                   </SelectTrigger>
@@ -339,7 +380,7 @@ export default function ClientsPage() {
               <Separator className="my-4" />
               <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
               
-                <Select name="departamento" onValueChange={handleDepartmentChange} defaultValue="Chinandega">
+                <Select name="departamento" onValueChange={handleDepartmentChange} defaultValue={editingClient?.departamento || "Chinandega"}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione un departamento..." />
                   </SelectTrigger>
@@ -349,7 +390,7 @@ export default function ClientsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select name="municipio" disabled={!selectedDepartment} onValueChange={handleMunicipalityChange}>
+                <Select name="municipio" disabled={!selectedDepartment && !editingClient} onValueChange={handleMunicipalityChange} defaultValue={editingClient?.municipio}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione un municipio..." />
                   </SelectTrigger>
@@ -359,7 +400,7 @@ export default function ClientsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select name="comunidad" disabled={!selectedMunicipality}>
+                <Select name="comunidad" disabled={!selectedMunicipality && !editingClient} defaultValue={editingClient?.comunidad}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione una comunidad..." />
                   </SelectTrigger>
@@ -369,7 +410,7 @@ export default function ClientsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input id="direccion" name="direccion" placeholder="Dirección..." required/>
+                <Input id="direccion" name="direccion" placeholder="Dirección..." required defaultValue={editingClient?.direccion}/>
 
               <div className="flex items-center gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={handleGetLocation} disabled={isGettingLocation}>
@@ -391,15 +432,17 @@ export default function ClientsPage() {
               <Separator className="my-4" />
               <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
 
-              <Input id="actividad-economica" name="actividad-economica" placeholder="Actividad Económica..." />
-              <Input id="profesion" name="profesion" placeholder="Profesión..." />
-              <Input id="centro-trabajo" name="centro-trabajo" placeholder="Centro de trabajo..." />
-              <Input id="direccion-trabajo" name="direccion-trabajo" placeholder="Dirección de trabajo..." />
+              <Input id="actividad-economica" name="actividad-economica" placeholder="Actividad Económica..." defaultValue={editingClient?.actividadEconomica} />
+              <Input id="profesion" name="profesion" placeholder="Profesión..." defaultValue={editingClient?.profesion} />
+              <Input id="centro-trabajo" name="centro-trabajo" placeholder="Centro de trabajo..." defaultValue={editingClient?.centroTrabajo} />
+              <Input id="direccion-trabajo" name="direccion-trabajo" placeholder="Dirección de trabajo..." defaultValue={editingClient?.direccionTrabajo} />
             </div>
           </form>
         </div>
         <DialogFooter className="p-6 pt-0">
-          <Button type="submit" form="add-client-form" className="w-full">Guardar Cliente</Button>
+          <Button type="submit" form="client-form" className="w-full">
+            {isEditing ? 'Guardar Cambios' : 'Guardar Cliente'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
