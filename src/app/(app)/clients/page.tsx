@@ -173,7 +173,7 @@ export default function ClientsPage() {
           </CardContent>
         </Card>
       </div>
-      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
           <DialogDescription>
@@ -182,44 +182,44 @@ export default function ClientsPage() {
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
           <div className="grid gap-4 py-4 pr-2">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="primer-nombre" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="primer-nombre" className="text-right col-span-2">
                 Primer nombre
               </Label>
               <Input id="primer-nombre" placeholder="Primer nombre..." className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="segundo-nombre" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="segundo-nombre" className="text-right col-span-2">
                 Segundo nombre
               </Label>
               <Input id="segundo-nombre" placeholder="Segundo nombre..." className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="apellido" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="apellido" className="text-right col-span-2">
                 Apellido
               </Label>
               <Input id="apellido" placeholder="Apellido..." className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="segundo-apellido" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="segundo-apellido" className="text-right col-span-2">
                 Segundo apellido
               </Label>
               <Input id="segundo-apellido" placeholder="Segundo apellido..." className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="phone" className="text-right col-span-2">
                 Teléfono
               </Label>
               <Input id="phone" placeholder="Teléfono..." className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="cedula" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="cedula" className="text-right col-span-2">
                 Cédula
               </Label>
               <Input id="cedula" placeholder="Cédula..." className="col-span-3" />
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="sexo" className="text-right">
+             <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="sexo" className="text-right col-span-2">
                 Sexo
               </Label>
                <Select>
@@ -232,8 +232,8 @@ export default function ClientsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="estado-civil" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="estado-civil" className="text-right col-span-2">
                 Estado civil
               </Label>
               <Select>
@@ -252,8 +252,8 @@ export default function ClientsPage() {
             <Separator className="my-4" />
             <h4 className="text-center font-semibold text-primary">Ubicación del Cliente</h4>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="departamento" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="departamento" className="text-right col-span-2">
                 Departamento
               </Label>
               <Select>
@@ -265,8 +265,8 @@ export default function ClientsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="municipio" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="municipio" className="text-right col-span-2">
                 Municipio
               </Label>
               <Select>
@@ -278,8 +278,8 @@ export default function ClientsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="comunidad" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="comunidad" className="text-right col-span-2">
                 Comunidad
               </Label>
               <Select>
@@ -291,15 +291,15 @@ export default function ClientsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="direccion" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="direccion" className="text-right col-span-2">
                 Dirección
               </Label>
               <Input id="direccion" placeholder="Dirección..." className="col-span-3" />
             </div>
 
-             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="gps-location" className="text-right">
+             <div className="grid grid-cols-5 items-center gap-4">
+                <Label htmlFor="gps-location" className="text-right col-span-2">
                     Ubicación
                 </Label>
                 <div className="col-span-3 flex items-center gap-2">
@@ -314,8 +314,8 @@ export default function ClientsPage() {
                 </div>
             </div>
              { (location || locationError) &&
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <div className="col-start-2 col-span-3">
+                <div className="grid grid-cols-5 items-center gap-4">
+                    <div className="col-start-3 col-span-3">
                         {location && <p className="text-sm text-green-600">{location}</p>}
                         {locationError && <p className="text-sm text-destructive">{locationError}</p>}
                     </div>
@@ -326,8 +326,8 @@ export default function ClientsPage() {
             <Separator className="my-4" />
             <h4 className="text-center font-semibold text-primary">Actividad Económica del Cliente</h4>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="actividad-economica" className="text-right">
+            <div className="grid grid-cols-5 items-center gap-4">
+              <Label htmlFor="actividad-economica" className="text-right col-span-2">
                 Actividad
               </Label>
               <Input id="actividad-economica" placeholder="Actividad Económica..." className="col-span-3" />
