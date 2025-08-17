@@ -10,29 +10,7 @@ import { getAuth, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import Loading from '../loading';
-
-const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    {...props}
-    viewBox="0 0 100 100"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g>
-      <circle cx="50" cy="50" r="42" fill="url(#grad1)" />
-      <path d="M 30 70 L 30 50 L 40 50 L 40 70 Z" fill="hsl(var(--primary))" />
-      <path d="M 45 70 L 45 40 L 55 40 L 55 70 Z" fill="hsl(var(--primary))" />
-      <path d="M 60 70 L 60 30 L 70 30 L 70 70 Z" fill="hsl(var(--primary))" />
-      <path d="M30 50 C 40 40, 60 40, 70 50 L 75 45 C 80 40, 70 20, 80 25 L 85 20" stroke="hsl(var(--accent))" strokeWidth="5" fill="none" strokeLinecap="round" />
-    </g>
-    <defs>
-      <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style={{ stopColor: "lightblue", stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: "hsl(var(--primary))", stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-  </svg>
-);
-
+import Image from 'next/image';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
@@ -123,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
             <Button asChild variant="ghost" className="h-10 gap-2 px-2 text-base font-bold">
               <Link href="/dashboard">
-                <CustomLogo className="size-6 shrink-0 text-primary" />
+                <Image src="https://placehold.co/100x100.png" alt="logo" width={24} height={24} className="size-6 shrink-0 text-primary" data-ai-hint="logo" />
                 <span className="hidden sm:inline">
                   RapiGestion
                 </span>
