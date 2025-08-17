@@ -9,6 +9,8 @@ import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import packageJson from "../../../../package.json";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const CustomLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -60,6 +62,7 @@ const NoCobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState<string>('');
   
   useEffect(() => {
     const auth = getAuth(app);
@@ -79,7 +82,14 @@ export default function DashboardPage() {
       }
     });
 
-    return () => unsubscribe();
+    const timer = setInterval(() => {
+      setCurrentDate(format(new Date(), "PPPPp", { locale: es }));
+    }, 1000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(timer);
+    };
   }, []);
 
   return (
@@ -94,7 +104,7 @@ export default function DashboardPage() {
           <CustomLogo className="w-20 h-20 text-blue-800" />
           <h3 className="text-2xl font-bold text-primary">{userName || 'Cargando...'}</h3>
           <p className="text-muted-foreground">Que tengas un buen día!</p>
-          <p className="text-sm text-muted-foreground">16/8/2025</p>
+          <p className="text-sm text-muted-foreground">{currentDate || 'Cargando fecha...'}</p>
           <h4 className="text-xl font-semibold text-blue-800">Recuperación</h4>
           <p className="text-3xl font-bold text-blue-800">C$ 11,595.00</p>
           <Separator className="w-full" />
