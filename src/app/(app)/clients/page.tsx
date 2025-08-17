@@ -468,43 +468,45 @@ export default function ClientsPage() {
       </Dialog>
       
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle>Detalles del Cliente</DialogTitle>
             <DialogDescription>
               Información completa del cliente seleccionado.
             </DialogDescription>
           </DialogHeader>
           {selectedClient && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <h4 className="font-semibold text-primary">Información Personal</h4>
-                <DetailRow icon={User} label="Nombre Completo" value={`${selectedClient.primerNombre} ${selectedClient.segundoNombre || ''} ${selectedClient.apellido} ${selectedClient.segundoApellido || ''}`} />
-                <DetailRow icon={FileText} label="Cédula" value={selectedClient.cedula} />
-                <DetailRow icon={Phone} label="Teléfono" value={selectedClient.phone} />
-                <DetailRow icon={User} label="Sexo" value={selectedClient.sexo} />
-                <DetailRow icon={User} label="Estado Civil" value={selectedClient.estadoCivil} />
+            <div className="flex-1 overflow-y-auto px-6">
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-primary">Información Personal</h4>
+                  <DetailRow icon={User} label="Nombre Completo" value={`${selectedClient.primerNombre} ${selectedClient.segundoNombre || ''} ${selectedClient.apellido} ${selectedClient.segundoApellido || ''}`} />
+                  <DetailRow icon={FileText} label="Cédula" value={selectedClient.cedula} />
+                  <DetailRow icon={Phone} label="Teléfono" value={selectedClient.phone} />
+                  <DetailRow icon={User} label="Sexo" value={selectedClient.sexo} />
+                  <DetailRow icon={User} label="Estado Civil" value={selectedClient.estadoCivil} />
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-primary">Ubicación</h4>
+                  <DetailRow icon={MapIcon} label="Departamento" value={selectedClient.departamento} />
+                  <DetailRow icon={MapIcon} label="Municipio" value={selectedClient.municipio} />
+                  <DetailRow icon={MapIcon} label="Comunidad" value={selectedClient.comunidad} />
+                  <DetailRow icon={MapIcon} label="Dirección" value={selectedClient.direccion} />
+                  <DetailRow icon={MapPin} label="Coordenadas GPS" value={selectedClient.location} />
+                </div>
+                <Separator />
+                 <div className="space-y-2">
+                  <h4 className="font-semibold text-primary">Información Laboral</h4>
+                   <DetailRow icon={Briefcase} label="Actividad Económica" value={selectedClient.actividadEconomica} />
+                   <DetailRow icon={Briefcase} label="Profesión" value={selectedClient.profesion} />
+                   <DetailRow icon={Building} label="Centro de Trabajo" value={selectedClient.centroTrabajo} />
+                   <DetailRow icon={MapIcon} label="Dirección del Trabajo" value={selectedClient.direccionTrabajo} />
+                 </div>
               </div>
-              <Separator />
-              <div className="space-y-2">
-                <h4 className="font-semibold text-primary">Ubicación</h4>
-                <DetailRow icon={MapIcon} label="Departamento" value={selectedClient.departamento} />
-                <DetailRow icon={MapIcon} label="Municipio" value={selectedClient.municipio} />
-                <DetailRow icon={MapIcon} label="Comunidad" value={selectedClient.comunidad} />
-                <DetailRow icon={MapIcon} label="Dirección" value={selectedClient.direccion} />
-                <DetailRow icon={MapPin} label="Coordenadas GPS" value={selectedClient.location} />
-              </div>
-              <Separator />
-               <div className="space-y-2">
-                <h4 className="font-semibold text-primary">Información Laboral</h4>
-                 <DetailRow icon={Briefcase} label="Actividad Económica" value={selectedClient.actividadEconomica} />
-                 <DetailRow icon={Briefcase} label="Profesión" value={selectedClient.profesion} />
-                 <DetailRow icon={Building} label="Centro de Trabajo" value={selectedClient.centroTrabajo} />
-                 <DetailRow icon={MapIcon} label="Dirección del Trabajo" value={selectedClient.direccionTrabajo} />
-               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-0">
             <Button onClick={() => setIsDetailsOpen(false)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
