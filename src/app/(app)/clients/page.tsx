@@ -181,7 +181,7 @@ export default function ClientsPage() {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto px-6">
-          <div className="grid gap-4 py-4 pr-3">
+          <div className="grid gap-4 py-4 pr-2">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="primer-nombre" className="text-right">
                 Primer nombre
@@ -341,5 +341,3 @@ export default function ClientsPage() {
     </Dialog>
   )
 }
-
-    
