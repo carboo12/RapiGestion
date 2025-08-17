@@ -121,8 +121,8 @@ export default function ClientsPage() {
             Rellena la información para registrar a un nuevo cliente en el sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid gap-4 py-4 pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
+          <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="primer-nombre" className="text-right">
                 Primer nombre
