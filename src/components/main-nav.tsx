@@ -1,3 +1,4 @@
+
 'use client';
 import { usePathname } from 'next/navigation';
 import { Wallet, Users, CreditCard, Map } from 'lucide-react';
@@ -6,15 +7,22 @@ import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { Logo } from './logo';
 
-const navItems = [
-  { href: '/dashboard', icon: Wallet, label: 'Cobros' },
-  { href: '/clients', icon: Users, label: 'Clientes' },
-  { href: '/credits', icon: CreditCard, label: 'Creditos' },
-  { href: '/routes', icon: Map, label: 'Rutas' },
+interface NavProps {
+  userRole: string | null;
+}
+
+const allNavItems = [
+  { href: '/dashboard', icon: Wallet, label: 'Cobros', roles: ['Administrador', 'Gestor de Cobros'] },
+  { href: '/clients', icon: Users, label: 'Clientes', roles: ['Administrador', 'Gestor de Cobros'] },
+  { href: '/credits', icon: CreditCard, label: 'Creditos', roles: ['Administrador', 'Gestor de Cobros'] },
+  { href: '/routes', icon: Map, label: 'Rutas', roles: ['Administrador', 'Gestor de Cobros'] },
 ];
 
-export function DesktopNav() {
+export function DesktopNav({ userRole }: NavProps) {
   const pathname = usePathname();
+  
+  const navItems = allNavItems.filter(item => userRole && item.roles.includes(userRole));
+
   return (
     <nav className="hidden md:flex flex-col h-full w-64 border-r bg-background">
       <div className="flex items-center h-16 border-b px-6">
@@ -48,8 +56,10 @@ export function DesktopNav() {
 }
 
 
-export function MobileNav() {
+export function MobileNav({ userRole }: NavProps) {
   const pathname = usePathname();
+
+  const navItems = allNavItems.filter(item => userRole && item.roles.includes(userRole));
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t border-border md:hidden bottom-nav">
@@ -78,3 +88,5 @@ export function MobileNav() {
     </div>
   );
 }
+
+    

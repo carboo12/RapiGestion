@@ -7,18 +7,147 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, MapIcon, Save, PlusCircle } from "lucide-react";
+import { ArrowLeft, MapIcon, Save } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { app } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
-const pendingCredits = [
-  { id: 'credit-01', clientName: 'Alice Johnson', address: '1234 Elm St', amount: 50.00 },
-  { id: 'credit-02', clientName: 'Robert Brown', address: '5678 Oak St', amount: 75.00 },
-  { id: 'credit-03', clientName: 'Emily Davis', address: '9101 Pine St', amount: 30.00 },
-  { id: 'credit-04', clientName: 'Michael Wilson', address: '1213 Maple St', amount: 100.00 },
-  { id: 'credit-05', clientName: 'David Williams', address: '2122 Cedar St', amount: 45.00 },
-];
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface Credit {
+  id: string;
+  clientName: string;
+  clientId: string;
+  clientAddress: string; // Assuming client has an address property
+  amountToPay: number; // Assuming this is the installment amount
+}
 
 export default function AssignRoutePage() {
+  const [collectors, setCollectors] = useState<User[]>([]);
+  const [pendingCredits, setPendingCredits] = useState<Credit[]>([]);
+  const [selectedCredits, setSelectedCredits] = useState<string[]>([]);
+  const [selectedCollector, setSelectedCollector] = useState<string>('');
+  const [routeDate, setRouteDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const { toast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    const db = getFirestore(app);
+    
+    const fetchData = async () => {
+      setLoading(true);
+      // Fetch collectors
+      const usersRef = collection(db, "users");
+      const qCollectors = query(usersRef, where("role", "==", "Gestor de Cobros"));
+      const collectorSnapshot = await getDocs(qCollectors);
+      const collectorList = collectorSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      setCollectors(collectorList);
+
+      // Fetch pending credits and associated clients
+      const creditsRef = collection(db, 'credits');
+      const qCredits = query(creditsRef, where("status", "in", ["Activo", "Vencido"]));
+      const creditSnapshot = await getDocs(qCredits);
+
+      const clientsRef = collection(db, 'clients');
+      const clientSnapshot = await getDocs(clientsRef);
+      const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const creditList = creditSnapshot.docs.map(doc => {
+          const data = doc.data();
+          const client = clientList.find(c => c.id === data.clientId);
+          return {
+              id: doc.id,
+              clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
+              clientId: data.clientId,
+              clientAddress: client ? client.direccion : 'Dirección no disponible',
+              amountToPay: data.balance, // Or calculate installment
+          } as Credit;
+      });
+      
+      setPendingCredits(creditList);
+      setLoading(false);
+    };
+
+    fetchData();
+  }, []);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCredits(pendingCredits.map(c => c.id));
+    } else {
+      setSelectedCredits([]);
+    }
+  };
+  
+  const handleSelectCredit = (creditId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCredits(prev => [...prev, creditId]);
+    } else {
+      setSelectedCredits(prev => prev.filter(id => id !== creditId));
+    }
+  };
+
+  const handleSaveRoute = async () => {
+    if (!selectedCollector) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Por favor, selecciona un gestor de cobros.' });
+      return;
+    }
+    if (selectedCredits.length === 0) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Debes seleccionar al menos un crédito para la ruta.' });
+      return;
+    }
+    setSaving(true);
+    const db = getFirestore(app);
+    try {
+      // 1. Save the route
+      const routeRef = await addDoc(collection(db, 'routes'), {
+        collectorId: selectedCollector,
+        date: Timestamp.fromDate(new Date(routeDate)),
+        creditIds: selectedCredits,
+        status: 'Pendiente',
+        createdAt: serverTimestamp()
+      });
+
+      // 2. Create notification for the collector
+      await addDoc(collection(db, `users/${selectedCollector}/notifications`), {
+        title: 'Nueva Ruta Asignada',
+        description: `Se te ha asignado una nueva ruta para el ${routeDate}.`,
+        link: `/routes`,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+
+      toast({ title: 'Éxito', description: 'La ruta ha sido asignada y el gestor notificado.' });
+      router.push('/routes');
+
+    } catch (error) {
+      console.error("Error saving route:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo guardar la ruta.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center gap-4">
@@ -42,19 +171,18 @@ export default function AssignRoutePage() {
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="collector">Gestor de Cobros</Label>
-            <Select>
+            <Select onValueChange={setSelectedCollector} value={selectedCollector}>
               <SelectTrigger id="collector">
                 <SelectValue placeholder="Seleccionar un gestor..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="carlos-r">Carlos Rodriguez</SelectItem>
-                <SelectItem value="maria-s">Maria Sanchez</SelectItem>
+                {collectors.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="route-date">Fecha de la Ruta</Label>
-            <Input id="route-date" type="date" />
+            <Input id="route-date" type="date" value={routeDate} onChange={(e) => setRouteDate(e.target.value)} />
           </div>
         </CardContent>
       </Card>
@@ -81,7 +209,10 @@ export default function AssignRoutePage() {
                 <TableHeader>
                     <TableRow>
                     <TableHead className="w-[50px]">
-                        <Checkbox />
+                        <Checkbox 
+                          onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                          checked={selectedCredits.length === pendingCredits.length && pendingCredits.length > 0}
+                        />
                     </TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Dirección</TableHead>
@@ -92,11 +223,15 @@ export default function AssignRoutePage() {
                     {pendingCredits.map((credit) => (
                     <TableRow key={credit.id}>
                         <TableCell>
-                        <Checkbox id={`credit-${credit.id}`} />
+                          <Checkbox
+                            checked={selectedCredits.includes(credit.id)}
+                            onCheckedChange={(checked) => handleSelectCredit(credit.id, checked as boolean)}
+                            id={`credit-${credit.id}`}
+                          />
                         </TableCell>
                         <TableCell className="font-medium">{credit.clientName}</TableCell>
-                        <TableCell className="text-muted-foreground">{credit.address}</TableCell>
-                        <TableCell className="text-right">C$ {credit.amount.toFixed(2)}</TableCell>
+                        <TableCell className="text-muted-foreground">{credit.clientAddress}</TableCell>
+                        <TableCell className="text-right">C$ {credit.amountToPay.toFixed(2)}</TableCell>
                     </TableRow>
                     ))}
                 </TableBody>
@@ -107,12 +242,16 @@ export default function AssignRoutePage() {
       </div>
 
       <Button
-          className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
-        >
-        <Save className="h-7 w-7" />
+        onClick={handleSaveRoute}
+        disabled={saving}
+        className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+      >
+        {saving ? <Loader2 className="h-7 w-7 animate-spin" /> : <Save className="h-7 w-7" />}
         <span className="text-xs mt-1">Guardar</span>
       </Button>
 
     </div>
   );
 }
+
+    
