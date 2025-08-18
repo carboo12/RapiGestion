@@ -9,7 +9,7 @@ import { Map, MapPin, Phone, PlusCircle, Navigation, Loader2 } from "lucide-reac
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
-import { getFirestore, collection, doc, getDoc, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { getFirestore, collection, doc, getDoc, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 
 interface Route {
@@ -183,5 +183,3 @@ export default function RoutesPage() {
     </div>
   )
 }
-
-    
