@@ -6,7 +6,7 @@ import { doc, getDoc, getFirestore, collection, query, where, onSnapshot, addDoc
 import { app } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Plus, ShieldCheck, DollarSign, List, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, ShieldCheck, DollarSign, List, Edit, Printer, Share2 } from 'lucide-react';
 import Loading from '@/app/loading';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -188,7 +188,7 @@ export default function CreditDetailPage() {
           <span className="text-xs text-muted-foreground w-10">v 10.1.1</span>
         </header>
 
-        <main className="flex-1 p-4 space-y-4 pb-24">
+        <main className="flex-1 p-4 space-y-4 pb-36">
           <Card className="rounded-2xl border-2 border-green-500 shadow-lg">
               <CardContent className="p-4 space-y-2">
                   <div className='text-center'>
@@ -283,7 +283,7 @@ export default function CreditDetailPage() {
 
         <Dialog open={isGuaranteeDialogOpen} onOpenChange={setIsGuaranteeDialogOpen}>
             <DialogTrigger asChild>
-                <Button className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
+                <Button className="fixed bottom-36 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
                     <Plus className="h-7 w-7" />
                     <span className="text-xs mt-1">Garantía</span>
                 </Button>
@@ -323,6 +323,17 @@ export default function CreditDetailPage() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        
+        <div className="fixed bottom-20 right-4 space-y-2">
+            <Button className="h-16 w-16 rounded-full bg-green-500 hover:bg-green-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
+                <Printer className="h-7 w-7" />
+                <span className="text-xs mt-1">Imprimir</span>
+            </Button>
+             <Button className="h-16 w-16 rounded-full bg-sky-500 hover:bg-sky-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
+                <Share2 className="h-7 w-7" />
+                <span className="text-xs mt-1">Compartir</span>
+            </Button>
+        </div>
     </div>
   );
 }

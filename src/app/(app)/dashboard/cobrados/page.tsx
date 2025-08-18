@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, ChevronRight, Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getFirestore, collection, onSnapshot, getDocs } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot, getDocs, Timestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 
 interface Payment {
@@ -15,6 +15,7 @@ interface Payment {
   clientId: string;
   clientName: string;
   amount: number;
+  paymentDate: Timestamp;
 }
 
 export default function CobradosPage() {
@@ -41,6 +42,7 @@ export default function CobradosPage() {
                     clientId: data.clientId,
                     clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
                     amount: data.amount,
+                    paymentDate: data.paymentDate,
                 } as Payment;
             });
 
@@ -94,7 +96,7 @@ export default function CobradosPage() {
             <ul className="space-y-3">
             {payments.map((payment) => (
                 <li key={payment.id}>
-                    <Link href={`/credits/${payment.creditId}`} className="flex items-center p-3 bg-card rounded-lg border border-green-200 w-full text-left">
+                    <Link href={`/payments/${payment.id}`} className="flex items-center p-3 bg-card rounded-lg border border-green-200 w-full text-left">
                         <Avatar className="h-10 w-10 bg-primary text-primary-foreground mr-4">
                             <AvatarFallback>{payment.clientName.split(' ').slice(0, 2).map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
