@@ -23,17 +23,47 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, PlusCircle } from "lucide-react"
+import { AlertCircle, MoreHorizontal, PlusCircle } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useState, useEffect } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc, serverTimestamp, query, where, Timestamp } from "firebase/firestore"
+import { app } from "@/lib/firebase"
+import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Separator } from "@/components/ui/separator"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
 
-const creditsData = [
-  { id: 'CR-001', client: 'Alice Johnson', amount: 'C$ 10,000', interest: '10%', term: '6 Meses', dueDate: '2024-06-15', status: 'Activo' },
-  { id: 'CR-002', client: 'Robert Brown', amount: '$ 500', interest: '12%', term: '12 Meses', dueDate: '2024-06-20', status: 'Activo' },
-  { id: 'CR-003', client: 'Emily Davis', amount: 'C$ 5,000', interest: '8%', term: '3 Meses', dueDate: '2024-05-30', status: 'Vencido' },
-  { id: 'CR-004', client: 'Michael Wilson', amount: 'C$ 25,000', interest: '15%', term: '24 Meses', dueDate: '2024-06-25', status: 'Pendiente' },
-  { id: 'CR-005', client: 'Sarah Miller', amount: '$ 2,000', interest: '7%', term: '18 Meses', dueDate: '2024-01-10', status: 'Pagado' },
-];
+interface Client {
+  id: string;
+  primerNombre: string;
+  apellido: string;
+  hasGuarantees?: boolean;
+  hasReferences?: boolean;
+}
+
+interface Credit {
+  id: string;
+  clientId: string;
+  clientName: string;
+  amount: number;
+  currency: 'C$' | 'USD';
+  interestRate: number;
+  term: number;
+  paymentFrequency: 'diario' | 'semanal' | 'quincenal' | 'mensual';
+  disbursementDate: Timestamp;
+  firstPaymentDate: Timestamp;
+  status: 'Activo' | 'Pendiente' | 'Pagado' | 'Vencido';
+}
 
 const getStatusVariant = (status: string) => {
   switch (status) {
@@ -46,7 +76,7 @@ const getStatusVariant = (status: string) => {
 }
 
 const getStatusClass = (status: string) => {
-  switch(status) {
+  switch (status) {
     case 'Activo': return 'bg-blue-100 text-blue-800';
     case 'Vencido': return 'bg-red-100 text-red-800';
     case 'Pagado': return 'bg-green-100 text-green-800';
@@ -55,8 +85,14 @@ const getStatusClass = (status: string) => {
   }
 }
 
-const CreditTable = ({ statusFilter }: { statusFilter?: string }) => {
-  const filteredCredits = statusFilter ? creditsData.filter(c => c.status === statusFilter) : creditsData;
+const CreditTable = ({ credits, statusFilter }: { credits: Credit[], statusFilter?: string }) => {
+  const filteredCredits = statusFilter ? credits.filter(c => c.status === statusFilter) : credits;
+
+  const formatDate = (timestamp: Timestamp) => {
+    if (!timestamp) return 'N/A';
+    return format(timestamp.toDate(), "P", { locale: es });
+  }
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -68,7 +104,7 @@ const CreditTable = ({ statusFilter }: { statusFilter?: string }) => {
               <TableHead>Monto</TableHead>
               <TableHead>Interés</TableHead>
               <TableHead>Plazo</TableHead>
-              <TableHead>Próxima Fecha de Pago</TableHead>
+              <TableHead>Desembolso</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>
                 <span className="sr-only">Acciones</span>
@@ -76,14 +112,20 @@ const CreditTable = ({ statusFilter }: { statusFilter?: string }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCredits.map((credit) => (
+            {filteredCredits.length === 0 ? (
+                <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24">
+                        No hay créditos en esta categoría.
+                    </TableCell>
+                </TableRow>
+            ) : filteredCredits.map((credit) => (
               <TableRow key={credit.id}>
-                <TableCell className="font-medium">{credit.id}</TableCell>
-                <TableCell>{credit.client}</TableCell>
-                <TableCell>{credit.amount}</TableCell>
-                <TableCell>{credit.interest}</TableCell>
-                <TableCell>{credit.term}</TableCell>
-                <TableCell>{credit.dueDate}</TableCell>
+                <TableCell className="font-medium">{credit.id.substring(0,8).toUpperCase()}</TableCell>
+                <TableCell>{credit.clientName}</TableCell>
+                <TableCell>{`${credit.currency} ${credit.amount.toLocaleString()}`}</TableCell>
+                <TableCell>{credit.interestRate}%</TableCell>
+                <TableCell>{credit.term} Meses</TableCell>
+                <TableCell>{formatDate(credit.disbursementDate)}</TableCell>
                 <TableCell>
                   <Badge variant={getStatusVariant(credit.status)} className={getStatusClass(credit.status)}>
                     {credit.status}
@@ -115,38 +157,328 @@ const CreditTable = ({ statusFilter }: { statusFilter?: string }) => {
 }
 
 export default function CreditsPage() {
+  const [credits, setCredits] = useState<Credit[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [openNewCredit, setOpenNewCredit] = useState(false);
+  const [isLoadingClientData, setIsLoadingClientData] = useState(false);
+  const [disbursementDate, setDisbursementDate] = useState<Date | undefined>();
+  const [firstPaymentDate, setFirstPaymentDate] = useState<Date | undefined>();
+
+  const { toast } = useToast();
+
+  const fetchClientsAndCredits = async () => {
+    const db = getFirestore(app);
+    try {
+      // Fetch clients
+      const clientsCol = collection(db, 'clients');
+      const clientSnapshot = await getDocs(clientsCol);
+      const clientList = clientSnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as Client));
+      setClients(clientList);
+
+      // Fetch credits
+      const creditsCol = collection(db, 'credits');
+      const creditSnapshot = await getDocs(creditsCol);
+      const creditList = creditSnapshot.docs.map(doc => {
+          const data = doc.data();
+          const client = clientList.find(c => c.id === data.clientId);
+          return {
+              id: doc.id,
+              ...data,
+              clientName: client ? `${client.primerNombre} ${client.apellido}` : 'Cliente Desconocido',
+          } as Credit;
+      });
+      setCredits(creditList);
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los datos.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchClientsAndCredits();
+  }, []);
+  
+  const handleClientSelection = async (clientId: string) => {
+    if (!clientId) {
+      setSelectedClient(null);
+      return;
+    }
+    
+    setIsLoadingClientData(true);
+    const db = getFirestore(app);
+    
+    try {
+      const clientRef = doc(db, 'clients', clientId);
+      const clientSnap = await getDoc(clientRef);
+
+      if (clientSnap.exists()) {
+          const clientData = { id: clientSnap.id, ...clientSnap.data() } as Client;
+
+          const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", clientId));
+          const referencesQuery = query(collection(db, "references"), where("clientId", "==", clientId));
+
+          const guaranteesSnapshot = await getDocs(guaranteesQuery);
+          const referencesSnapshot = await getDocs(referencesQuery);
+
+          clientData.hasGuarantees = !guaranteesSnapshot.empty;
+          clientData.hasReferences = !referencesSnapshot.empty;
+          
+          setSelectedClient(clientData);
+      }
+    } catch (error) {
+      console.error("Error validating client:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo verificar la información del cliente.'});
+    } finally {
+      setIsLoadingClientData(false);
+    }
+  };
+  
+  const handleNewCreditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedClient || !disbursementDate || !firstPaymentDate) {
+        toast({
+            variant: "destructive",
+            title: "Error de validación",
+            description: "Por favor, complete todos los campos requeridos.",
+        });
+        return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const newCreditData = {
+        clientId: selectedClient.id,
+        amount: parseFloat(formData.get('amount') as string),
+        currency: formData.get('currency') as 'C$' | 'USD',
+        interestRate: parseFloat(formData.get('interest-rate') as string),
+        term: parseInt(formData.get('term') as string, 10),
+        paymentFrequency: formData.get('payment-frequency') as 'diario' | 'semanal' | 'quincenal' | 'mensual',
+        disbursementDate: Timestamp.fromDate(disbursementDate),
+        firstPaymentDate: Timestamp.fromDate(firstPaymentDate),
+        status: 'Activo',
+        createdAt: serverTimestamp()
+    };
+
+    try {
+        const db = getFirestore(app);
+        await addDoc(collection(db, "credits"), newCreditData);
+
+        toast({
+            title: "Éxito",
+            description: "Nuevo crédito agregado correctamente.",
+        });
+        
+        // Reset states and close dialog
+        setOpenNewCredit(false);
+        setSelectedClient(null);
+        setDisbursementDate(undefined);
+        setFirstPaymentDate(undefined);
+        e.currentTarget.reset();
+        fetchClientsAndCredits(); // Refetch credits to update the table
+    } catch (error) {
+        console.error("Error creating credit:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Error al crear crédito',
+            description: 'No se pudo guardar el crédito en la base de datos.'
+        });
+    }
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h2 className="text-3xl font-bold tracking-tight text-center sm:text-left">Créditos</h2>
-        <Button className="w-full sm:w-auto">
-          <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Crédito
-        </Button>
+    <>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <h2 className="text-3xl font-bold tracking-tight text-center sm:text-left">Créditos</h2>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto" onClick={() => setOpenNewCredit(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Crédito
+            </Button>
+          </DialogTrigger>
+        </div>
+
+        <Tabs defaultValue="active" className="space-y-4">
+          <ScrollArea>
+            <TabsList>
+              <TabsTrigger value="active">Activos</TabsTrigger>
+              <TabsTrigger value="pending">Pendientes de Aprobación</TabsTrigger>
+              <TabsTrigger value="paid">Pagados</TabsTrigger>
+              <TabsTrigger value="overdue">Vencidos</TabsTrigger>
+            </TabsList>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          <TabsContent value="active">
+            <CreditTable credits={credits} statusFilter="Activo" />
+          </TabsContent>
+          <TabsContent value="pending">
+            <CreditTable credits={credits} statusFilter="Pendiente" />
+          </TabsContent>
+          <TabsContent value="paid">
+            <CreditTable credits={credits} statusFilter="Pagado" />
+          </TabsContent>
+          <TabsContent value="overdue">
+            <CreditTable credits={credits} statusFilter="Vencido" />
+          </TabsContent>
+        </Tabs>
       </div>
 
-      <Tabs defaultValue="active" className="space-y-4">
-        <ScrollArea>
-          <TabsList>
-            <TabsTrigger value="active">Activos</TabsTrigger>
-            <TabsTrigger value="pending">Pendientes de Aprobación</TabsTrigger>
-            <TabsTrigger value="paid">Pagados</TabsTrigger>
-            <TabsTrigger value="overdue">Vencidos</TabsTrigger>
-          </TabsList>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-        <TabsContent value="active">
-          <CreditTable statusFilter="Activo" />
-        </TabsContent>
-        <TabsContent value="pending">
-          <CreditTable statusFilter="Pendiente" />
-        </TabsContent>
-        <TabsContent value="paid">
-          <CreditTable statusFilter="Pagado" />
-        </TabsContent>
-        <TabsContent value="overdue">
-          <CreditTable statusFilter="Vencido" />
-        </TabsContent>
-      </Tabs>
-    </div>
+      <Dialog open={openNewCredit} onOpenChange={setOpenNewCredit}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Otorgar Nuevo Crédito</DialogTitle>
+            <DialogDescription>
+              Selecciona un cliente y rellena los detalles del crédito.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="client-select">Seleccionar Cliente</Label>
+              <Select onValueChange={handleClientSelection} disabled={isLoadingClientData}>
+                <SelectTrigger id="client-select">
+                  <SelectValue placeholder="Busca o selecciona un cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map(client => (
+                    <SelectItem key={client.id} value={client.id}>{`${client.primerNombre} ${client.apellido}`}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {isLoadingClientData && <p className="text-sm text-muted-foreground">Verificando cliente...</p>}
+
+            {selectedClient && (!selectedClient.hasGuarantees || !selectedClient.hasReferences) && (
+                 <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Cliente no apto para Crédito</AlertTitle>
+                    <AlertDescription>
+                        {!selectedClient.hasGuarantees && <p>- El cliente no tiene garantías registradas.</p>}
+                        {!selectedClient.hasReferences && <p>- El cliente no tiene referencias registradas.</p>}
+                        <p className="mt-2">Por favor, completa la información del cliente en la sección de Expediente.</p>
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
+                <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4">
+                    <Separator />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <Label htmlFor="amount">Monto del Crédito</Label>
+                           <Input id="amount" name="amount" type="number" required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="currency">Moneda</Label>
+                            <Select name="currency" defaultValue="C$">
+                               <SelectTrigger id="currency">
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="C$">Córdoba (C$)</SelectItem>
+                                 <SelectItem value="USD">Dólar (USD)</SelectItem>
+                               </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <Label htmlFor="interest-rate">Tasa de Interés (%)</Label>
+                           <Input id="interest-rate" name="interest-rate" type="number" step="0.1" required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="term">Plazo (Meses)</Label>
+                            <Input id="term" name="term" type="number" required />
+                        </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="payment-frequency">Frecuencia de Pago</Label>
+                        <Select name="payment-frequency" defaultValue="mensual">
+                           <SelectTrigger id="payment-frequency">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="diario">Diario</SelectItem>
+                             <SelectItem value="semanal">Semanal</SelectItem>
+                             <SelectItem value="quincenal">Quincenal</SelectItem>
+                             <SelectItem value="mensual">Mensual</SelectItem>
+                           </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <Label>Fecha de Desembolso</Label>
+                           <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !disbursementDate && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {disbursementDate ? format(disbursementDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={disbursementDate}
+                                onSelect={setDisbursementDate}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                            </Popover>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Fecha de Primer Pago</Label>
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !firstPaymentDate && "text-muted-foreground"
+                                    )}
+                                    >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {firstPaymentDate ? format(firstPaymentDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                    mode="single"
+                                    selected={firstPaymentDate}
+                                    onSelect={setFirstPaymentDate}
+                                    initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+
+                </form>
+            )}
+
+          </div>
+           <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setOpenNewCredit(false)}>Cancelar</Button>
+                {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
+                    <Button type="submit" form="new-credit-form">Guardar Crédito</Button>
+                )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
+
+    
