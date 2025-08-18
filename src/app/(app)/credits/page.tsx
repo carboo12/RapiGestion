@@ -40,7 +40,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 
 interface Client {
@@ -294,12 +293,12 @@ export default function CreditsPage() {
   }
 
   return (
-    <>
+    <Dialog open={openNewCredit} onOpenChange={setOpenNewCredit}>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <h2 className="text-3xl font-bold tracking-tight text-center sm:text-left">Créditos</h2>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto" onClick={() => setOpenNewCredit(true)}>
+            <Button className="w-full sm:w-auto">
               <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Crédito
             </Button>
           </DialogTrigger>
@@ -330,155 +329,151 @@ export default function CreditsPage() {
         </Tabs>
       </div>
 
-      <Dialog open={openNewCredit} onOpenChange={setOpenNewCredit}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Otorgar Nuevo Crédito</DialogTitle>
-            <DialogDescription>
-              Selecciona un cliente y rellena los detalles del crédito.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="client-select">Seleccionar Cliente</Label>
-              <Select onValueChange={handleClientSelection} disabled={isLoadingClientData}>
-                <SelectTrigger id="client-select">
-                  <SelectValue placeholder="Busca o selecciona un cliente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>{`${client.primerNombre} ${client.apellido}`}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {isLoadingClientData && <p className="text-sm text-muted-foreground">Verificando cliente...</p>}
-
-            {selectedClient && (!selectedClient.hasGuarantees || !selectedClient.hasReferences) && (
-                 <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Cliente no apto para Crédito</AlertTitle>
-                    <AlertDescription>
-                        {!selectedClient.hasGuarantees && <p>- El cliente no tiene garantías registradas.</p>}
-                        {!selectedClient.hasReferences && <p>- El cliente no tiene referencias registradas.</p>}
-                        <p className="mt-2">Por favor, completa la información del cliente en la sección de Expediente.</p>
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
-                <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4">
-                    <Separator />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                           <Label htmlFor="amount">Monto del Crédito</Label>
-                           <Input id="amount" name="amount" type="number" required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="currency">Moneda</Label>
-                            <Select name="currency" defaultValue="C$">
-                               <SelectTrigger id="currency">
-                                 <SelectValue />
-                               </SelectTrigger>
-                               <SelectContent>
-                                 <SelectItem value="C$">Córdoba (C$)</SelectItem>
-                                 <SelectItem value="USD">Dólar (USD)</SelectItem>
-                               </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                           <Label htmlFor="interest-rate">Tasa de Interés (%)</Label>
-                           <Input id="interest-rate" name="interest-rate" type="number" step="0.1" required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="term">Plazo (Meses)</Label>
-                            <Input id="term" name="term" type="number" required />
-                        </div>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="payment-frequency">Frecuencia de Pago</Label>
-                        <Select name="payment-frequency" defaultValue="mensual">
-                           <SelectTrigger id="payment-frequency">
-                             <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent>
-                             <SelectItem value="diario">Diario</SelectItem>
-                             <SelectItem value="semanal">Semanal</SelectItem>
-                             <SelectItem value="quincenal">Quincenal</SelectItem>
-                             <SelectItem value="mensual">Mensual</SelectItem>
-                           </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                           <Label>Fecha de Desembolso</Label>
-                           <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !disbursementDate && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {disbursementDate ? format(disbursementDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                mode="single"
-                                selected={disbursementDate}
-                                onSelect={setDisbursementDate}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Fecha de Primer Pago</Label>
-                             <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !firstPaymentDate && "text-muted-foreground"
-                                    )}
-                                    >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {firstPaymentDate ? format(firstPaymentDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                    mode="single"
-                                    selected={firstPaymentDate}
-                                    onSelect={setFirstPaymentDate}
-                                    initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    </div>
-
-                </form>
-            )}
-
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Otorgar Nuevo Crédito</DialogTitle>
+          <DialogDescription>
+            Selecciona un cliente y rellena los detalles del crédito.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="client-select">Seleccionar Cliente</Label>
+            <Select onValueChange={handleClientSelection} disabled={isLoadingClientData}>
+              <SelectTrigger id="client-select">
+                <SelectValue placeholder="Busca o selecciona un cliente..." />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>{`${client.primerNombre} ${client.apellido}`}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-           <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setOpenNewCredit(false)}>Cancelar</Button>
-                {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
-                    <Button type="submit" form="new-credit-form">Guardar Crédito</Button>
-                )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          
+          {isLoadingClientData && <p className="text-sm text-muted-foreground">Verificando cliente...</p>}
+
+          {selectedClient && (!selectedClient.hasGuarantees || !selectedClient.hasReferences) && (
+               <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Cliente no apto para Crédito</AlertTitle>
+                  <AlertDescription>
+                      {!selectedClient.hasGuarantees && <p>- El cliente no tiene garantías registradas.</p>}
+                      {!selectedClient.hasReferences && <p>- El cliente no tiene referencias registradas.</p>}
+                      <p className="mt-2">Por favor, completa la información del cliente en la sección de Expediente.</p>
+                  </AlertDescription>
+              </Alert>
+          )}
+
+          {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
+              <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4">
+                  <Separator />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                         <Label htmlFor="amount">Monto del Crédito</Label>
+                         <Input id="amount" name="amount" type="number" required />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="currency">Moneda</Label>
+                          <Select name="currency" defaultValue="C$">
+                             <SelectTrigger id="currency">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="C$">Córdoba (C$)</SelectItem>
+                               <SelectItem value="USD">Dólar (USD)</SelectItem>
+                             </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                         <Label htmlFor="interest-rate">Tasa de Interés (%)</Label>
+                         <Input id="interest-rate" name="interest-rate" type="number" step="0.1" required />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="term">Plazo (Meses)</Label>
+                          <Input id="term" name="term" type="number" required />
+                      </div>
+                  </div>
+                   <div className="space-y-2">
+                      <Label htmlFor="payment-frequency">Frecuencia de Pago</Label>
+                      <Select name="payment-frequency" defaultValue="mensual">
+                         <SelectTrigger id="payment-frequency">
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="diario">Diario</SelectItem>
+                           <SelectItem value="semanal">Semanal</SelectItem>
+                           <SelectItem value="quincenal">Quincenal</SelectItem>
+                           <SelectItem value="mensual">Mensual</SelectItem>
+                         </SelectContent>
+                      </Select>
+                  </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                         <Label>Fecha de Desembolso</Label>
+                         <Popover>
+                          <PopoverTrigger asChild>
+                              <Button
+                              variant={"outline"}
+                              className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !disbursementDate && "text-muted-foreground"
+                              )}
+                              >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {disbursementDate ? format(disbursementDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                              </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                              <Calendar
+                              mode="single"
+                              selected={disbursementDate}
+                              onSelect={setDisbursementDate}
+                              initialFocus
+                              />
+                          </PopoverContent>
+                          </Popover>
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Fecha de Primer Pago</Label>
+                           <Popover>
+                              <PopoverTrigger asChild>
+                                  <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                      "w-full justify-start text-left font-normal",
+                                      !firstPaymentDate && "text-muted-foreground"
+                                  )}
+                                  >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {firstPaymentDate ? format(firstPaymentDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                  </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                  mode="single"
+                                  selected={firstPaymentDate}
+                                  onSelect={setFirstPaymentDate}
+                                  initialFocus
+                                  />
+                              </PopoverContent>
+                          </Popover>
+                      </div>
+                  </div>
+
+              </form>
+          )}
+
+        </div>
+         <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setOpenNewCredit(false)}>Cancelar</Button>
+              {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
+                  <Button type="submit" form="new-credit-form">Guardar Crédito</Button>
+              )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
-
-    
