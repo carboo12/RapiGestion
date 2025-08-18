@@ -300,14 +300,14 @@ export default function CreditsPage() {
         </Tabs>
       </div>
 
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Otorgar Nuevo Crédito</DialogTitle>
           <DialogDescription>
             {selectedClient ? `Rellena los detalles del crédito para ${selectedClient.name}.` : ''}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="flex-1 space-y-4 py-4 overflow-y-auto no-scrollbar">
           
           {selectedClient && (
               <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4">
@@ -428,3 +428,5 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
+
+    
