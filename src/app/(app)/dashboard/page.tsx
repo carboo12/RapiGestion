@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -6,7 +7,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { app } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc, getFirestore } from "firebase/firestore";
+import { doc, getDoc, getFirestore, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import packageJson from "../../../../package.json";
 import { format } from "date-fns";
@@ -44,9 +45,7 @@ export default function DashboardPage() {
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // TODO: fetch daily recovery and payments count from firestore
-
-    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
@@ -64,8 +63,35 @@ export default function DashboardPage() {
       setCurrentDate(format(new Date(), "PPPPp", { locale: es }));
     }, 1000);
 
+    // Fetch daily recovery data
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayTimestamp = Timestamp.fromDate(today);
+    const tomorrowTimestamp = Timestamp.fromDate(tomorrow);
+
+    const paymentsQuery = query(
+      collection(db, "payments"),
+      where("paymentDate", ">=", todayTimestamp),
+      where("paymentDate", "<", tomorrowTimestamp)
+    );
+
+    const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
+      let totalAmount = 0;
+      snapshot.forEach((doc) => {
+        totalAmount += doc.data().amount;
+      });
+      setDailyRecovery(totalAmount);
+      setDailyPaymentsCount(snapshot.size);
+    }, (error) => {
+      console.error("Error fetching daily payments:", error);
+    });
+
     return () => {
-      unsubscribe();
+      unsubscribeAuth();
+      unsubscribePayments();
       clearInterval(timer);
     };
   }, []);
