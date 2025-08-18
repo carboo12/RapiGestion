@@ -119,10 +119,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 
   return (
-      <div className="flex h-screen w-full">
+      <div className="flex h-full w-full">
         <DesktopNav />
-        <div className="flex flex-col flex-1 w-full">
-            <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
+        <div className="flex flex-col flex-1 w-full overflow-hidden">
+            <header className="flex-shrink-0 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6">
                 <Button asChild variant="ghost" className="h-10 gap-2 px-2 text-base font-bold md:hidden">
                   <Link href="/dashboard">
                     <Logo className="size-6 shrink-0 text-primary" />
@@ -143,8 +143,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <UserNav onSignOut={handleSignOut}/>
                 </div>
             </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto mb-16 md:mb-0">
+            <main className="flex-1 overflow-auto">
+              <div className="p-4 md:p-6 lg:p-8 h-full">
                 {children}
+              </div>
             </main>
             {isMobile && <MobileNav />}
         </div>
