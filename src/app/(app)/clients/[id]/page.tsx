@@ -37,9 +37,11 @@ interface Reference {
 interface Guarantee {
     id: string;
     clientId: string;
-    type: string;
-    value: string;
-    details: string;
+    articulo: string;
+    color: string;
+    marca: string;
+    numeroDeSerie: string;
+    valorEstimado: string;
     createdAt: Timestamp;
 }
 
@@ -171,9 +173,11 @@ export default function ClientDetailPage() {
     const formData = new FormData(e.currentTarget);
     const guaranteeData = {
         clientId: id,
-        type: formData.get('guarantee-type') as string,
-        value: formData.get('guarantee-value') as string,
-        details: formData.get('guarantee-details') as string,
+        articulo: formData.get('guarantee-item') as string,
+        color: formData.get('guarantee-color') as string,
+        marca: formData.get('guarantee-brand') as string,
+        numeroDeSerie: formData.get('guarantee-serial') as string,
+        valorEstimado: formData.get('guarantee-value') as string,
         createdAt: serverTimestamp()
     };
 
@@ -275,16 +279,24 @@ export default function ClientDetailPage() {
                               </DialogHeader>
                               <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
                                   <div>
-                                      <Label htmlFor="guarantee-type">Tipo de Garantía</Label>
-                                      <Input id="guarantee-type" name="guarantee-type" placeholder="Ej: Televisor, Motocicleta" required />
+                                      <Label htmlFor="guarantee-item">Artículo</Label>
+                                      <Input id="guarantee-item" name="guarantee-item" placeholder="Ej: Televisor, Motocicleta" required />
+                                  </div>
+                                  <div>
+                                      <Label htmlFor="guarantee-color">Color</Label>
+                                      <Input id="guarantee-color" name="guarantee-color" placeholder="Ej: Negro" required />
+                                  </div>
+                                  <div>
+                                      <Label htmlFor="guarantee-brand">Marca</Label>
+                                      <Input id="guarantee-brand" name="guarantee-brand" placeholder="Ej: Samsung" required />
+                                  </div>
+                                   <div>
+                                      <Label htmlFor="guarantee-serial">Número de Serie</Label>
+                                      <Input id="guarantee-serial" name="guarantee-serial" placeholder="Ej: 12345XYZ" required />
                                   </div>
                                   <div>
                                       <Label htmlFor="guarantee-value">Valor Estimado (C$)</Label>
                                       <Input id="guarantee-value" name="guarantee-value" type="number" required />
-                                  </div>
-                                  <div>
-                                      <Label htmlFor="guarantee-details">Detalles u Observaciones</Label>
-                                      <Textarea id="guarantee-details" name="guarantee-details" placeholder="Ej: TV Samsung 42 pulgadas, Modelo X" required />
                                   </div>
                               </form>
                               <DialogFooter>
