@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, MapIcon } from "lucide-react";
+import { ArrowLeft, MapIcon, Save, PlusCircle } from "lucide-react";
 import Link from "next/link";
 
 const pendingCredits = [
@@ -20,7 +20,7 @@ const pendingCredits = [
 
 export default function AssignRoutePage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div className="flex items-center gap-4">
         <Button asChild variant="outline" size="icon">
           <Link href="/routes">
@@ -106,10 +106,13 @@ export default function AssignRoutePage() {
         </Card>
       </div>
 
+      <Button
+          className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+        >
+        <Save className="h-7 w-7" />
+        <span className="text-xs mt-1">Guardar</span>
+      </Button>
 
-      <div className="flex justify-end">
-        <Button size="lg">Guardar Ruta</Button>
-      </div>
     </div>
   );
 }
