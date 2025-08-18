@@ -272,34 +272,36 @@ export default function ClientDetailPage() {
                                   Agregar Garantía
                               </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-h-[90vh] flex flex-col">
                               <DialogHeader>
                                   <DialogTitle>Agregar Nueva Garantía</DialogTitle>
                                   <DialogDescription>Describe el objeto que respaldará el crédito.</DialogDescription>
                               </DialogHeader>
-                              <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
-                                  <div>
-                                      <Label htmlFor="guarantee-item">Artículo</Label>
-                                      <Input id="guarantee-item" name="guarantee-item" placeholder="Ej: Televisor, Motocicleta" required />
-                                  </div>
-                                  <div>
-                                      <Label htmlFor="guarantee-color">Color</Label>
-                                      <Input id="guarantee-color" name="guarantee-color" placeholder="Ej: Negro" required />
-                                  </div>
-                                  <div>
-                                      <Label htmlFor="guarantee-brand">Marca</Label>
-                                      <Input id="guarantee-brand" name="guarantee-brand" placeholder="Ej: Samsung" required />
-                                  </div>
-                                   <div>
-                                      <Label htmlFor="guarantee-serial">Número de Serie</Label>
-                                      <Input id="guarantee-serial" name="guarantee-serial" placeholder="Ej: 12345XYZ" required />
-                                  </div>
-                                  <div>
-                                      <Label htmlFor="guarantee-value">Valor Estimado (C$)</Label>
-                                      <Input id="guarantee-value" name="guarantee-value" type="number" required />
-                                  </div>
-                              </form>
-                              <DialogFooter>
+                              <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                                <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="guarantee-item">Artículo</Label>
+                                        <Input id="guarantee-item" name="guarantee-item" placeholder="Ej: Televisor, Motocicleta" required />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="guarantee-color">Color</Label>
+                                        <Input id="guarantee-color" name="guarantee-color" placeholder="Ej: Negro" required />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="guarantee-brand">Marca</Label>
+                                        <Input id="guarantee-brand" name="guarantee-brand" placeholder="Ej: Samsung" required />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="guarantee-serial">Número de Serie</Label>
+                                        <Input id="guarantee-serial" name="guarantee-serial" placeholder="Ej: 12345XYZ" required />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="guarantee-value">Valor Estimado (C$)</Label>
+                                        <Input id="guarantee-value" name="guarantee-value" type="number" required />
+                                    </div>
+                                </form>
+                              </div>
+                              <DialogFooter className="mt-4">
                                   <Button variant="ghost" onClick={() => setIsGuaranteeDialogOpen(false)}>Cancelar</Button>
                                   <Button type="submit" form="guarantee-form">Guardar Garantía</Button>
                               </DialogFooter>
