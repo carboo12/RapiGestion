@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -232,99 +233,101 @@ export default function ClientDetailPage() {
     .toUpperCase();
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 pb-20 md:p-0 -m-4 md:-m-8">
-       <header className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-10">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/clients')}>
-          <ArrowLeft className="h-6 w-6 text-green-600" />
-        </Button>
-        <h1 className="text-lg font-bold text-green-600">Detalle de Cliente</h1>
-        <span className="text-xs text-muted-foreground w-10">v 10.1.1</span>
-      </header>
+    <div className="flex flex-col h-full -m-4 md:-m-8">
+      <div className="flex flex-col flex-1 bg-gray-50 md:p-0">
+        <header className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-10">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/clients')}>
+            <ArrowLeft className="h-6 w-6 text-green-600" />
+          </Button>
+          <h1 className="text-lg font-bold text-green-600">Detalle de Cliente</h1>
+          <span className="text-xs text-muted-foreground w-10">v 10.1.1</span>
+        </header>
 
-      <main className="flex-1 overflow-y-auto p-4 space-y-4">
-        <Card className="rounded-2xl border-2 border-green-500 shadow-lg">
-            <CardContent className="p-4 space-y-3">
-                <div className='text-center'>
-                    <span className="text-sm text-gray-500">Cliente:</span>
-                    <p className="font-bold text-blue-600">{fullName}</p>
-                </div>
-                <div className="flex justify-around text-center">
-                    <div>
-                        <p className="font-bold text-green-600">{activeCreditsCount}</p>
-                        <p className="text-sm text-gray-500">Créditos Activos</p>
-                    </div>
-                     <div>
-                        <p className="font-bold text-yellow-600">{paidCreditsCount}</p>
-                        <p className="text-sm text-gray-500">Ciclos</p>
-                    </div>
-                </div>
-                <div className="space-y-2 pt-2">
-                    <Dialog open={isGuaranteeDialogOpen} onOpenChange={setIsGuaranteeDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="w-full rounded-full border-green-500 border-2 text-green-600 h-12">
-                                <ShieldCheck className="mr-2 h-5 w-5"/>
-                                Agregar Garantía
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Agregar Nueva Garantía</DialogTitle>
-                                <DialogDescription>Describe el objeto que respaldará el crédito.</DialogDescription>
-                            </DialogHeader>
-                             <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
-                                <div>
-                                    <Label htmlFor="guarantee-type">Tipo de Garantía</Label>
-                                    <Input id="guarantee-type" name="guarantee-type" placeholder="Ej: Televisor, Motocicleta" required />
-                                </div>
-                                <div>
-                                    <Label htmlFor="guarantee-value">Valor Estimado (C$)</Label>
-                                    <Input id="guarantee-value" name="guarantee-value" type="number" required />
-                                </div>
-                                <div>
-                                    <Label htmlFor="guarantee-details">Detalles u Observaciones</Label>
-                                    <Textarea id="guarantee-details" name="guarantee-details" placeholder="Ej: TV Samsung 42 pulgadas, Modelo X" required />
-                                </div>
-                            </form>
-                             <DialogFooter>
-                                <Button variant="ghost" onClick={() => setIsGuaranteeDialogOpen(false)}>Cancelar</Button>
-                                <Button type="submit" form="guarantee-form">Guardar Garantía</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                     <Button onClick={handleNewCredit} className="w-full rounded-full border-green-500 border-2 bg-green-500 hover:bg-green-600 h-12">
-                        <CreditCard className="mr-2 h-5 w-5"/>
-                        Agregar Crédito
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+        <main className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
+          <Card className="rounded-2xl border-2 border-green-500 shadow-lg">
+              <CardContent className="p-4 space-y-3">
+                  <div className='text-center'>
+                      <span className="text-sm text-gray-500">Cliente:</span>
+                      <p className="font-bold text-blue-600">{fullName}</p>
+                  </div>
+                  <div className="flex justify-around text-center">
+                      <div>
+                          <p className="font-bold text-green-600">{activeCreditsCount}</p>
+                          <p className="text-sm text-gray-500">Créditos Activos</p>
+                      </div>
+                      <div>
+                          <p className="font-bold text-yellow-600">{paidCreditsCount}</p>
+                          <p className="text-sm text-gray-500">Ciclos</p>
+                      </div>
+                  </div>
+                  <div className="space-y-2 pt-2">
+                      <Dialog open={isGuaranteeDialogOpen} onOpenChange={setIsGuaranteeDialogOpen}>
+                          <DialogTrigger asChild>
+                              <Button variant="outline" className="w-full rounded-full border-green-500 border-2 text-green-600 h-12">
+                                  <ShieldCheck className="mr-2 h-5 w-5"/>
+                                  Agregar Garantía
+                              </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                              <DialogHeader>
+                                  <DialogTitle>Agregar Nueva Garantía</DialogTitle>
+                                  <DialogDescription>Describe el objeto que respaldará el crédito.</DialogDescription>
+                              </DialogHeader>
+                              <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
+                                  <div>
+                                      <Label htmlFor="guarantee-type">Tipo de Garantía</Label>
+                                      <Input id="guarantee-type" name="guarantee-type" placeholder="Ej: Televisor, Motocicleta" required />
+                                  </div>
+                                  <div>
+                                      <Label htmlFor="guarantee-value">Valor Estimado (C$)</Label>
+                                      <Input id="guarantee-value" name="guarantee-value" type="number" required />
+                                  </div>
+                                  <div>
+                                      <Label htmlFor="guarantee-details">Detalles u Observaciones</Label>
+                                      <Textarea id="guarantee-details" name="guarantee-details" placeholder="Ej: TV Samsung 42 pulgadas, Modelo X" required />
+                                  </div>
+                              </form>
+                              <DialogFooter>
+                                  <Button variant="ghost" onClick={() => setIsGuaranteeDialogOpen(false)}>Cancelar</Button>
+                                  <Button type="submit" form="guarantee-form">Guardar Garantía</Button>
+                              </DialogFooter>
+                          </DialogContent>
+                      </Dialog>
+                      <Button onClick={handleNewCredit} className="w-full rounded-full border-green-500 border-2 bg-green-500 hover:bg-green-600 h-12">
+                          <CreditCard className="mr-2 h-5 w-5"/>
+                          Agregar Crédito
+                      </Button>
+                  </div>
+              </CardContent>
+          </Card>
 
-        <h3 className="text-center font-bold text-blue-600">Lista de Referencias</h3>
+          <h3 className="text-center font-bold text-blue-600">Lista de Referencias</h3>
 
-        <Card className="rounded-2xl border-2 border-green-500">
-            <CardContent className="p-4">
-                {references.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
-                        <Image src="https://placehold.co/128x128.png" data-ai-hint="empty state illustration" alt="No hay nada que mostrar" width={128} height={128} />
-                        <p className="mt-4 font-semibold">No hay nada que mostrar</p>
-                    </div>
-                ) : (
-                    <ul className="space-y-3">
-                        {references.map(ref => (
-                            <li key={ref.id}>
-                                <button onClick={() => handleOpenEditReferenceDialog(ref)} className="w-full text-left p-3 border rounded-lg hover:bg-gray-100 transition-colors">
-                                    <p className="font-semibold text-primary">{ref.name}</p>
-                                    <p className="text-sm text-muted-foreground">{ref.phone}</p>
-                                    <p className="text-sm text-muted-foreground">{ref.address}</p>
-                                    <p className="text-sm text-muted-foreground">Parentesco: {ref.relationship}</p>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </CardContent>
-        </Card>
-      </main>
+          <Card className="rounded-2xl border-2 border-green-500">
+              <CardContent className="p-4">
+                  {references.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
+                          <Image src="https://placehold.co/128x128.png" data-ai-hint="empty state illustration" alt="No hay nada que mostrar" width={128} height={128} />
+                          <p className="mt-4 font-semibold">No hay nada que mostrar</p>
+                      </div>
+                  ) : (
+                      <ul className="space-y-3">
+                          {references.map(ref => (
+                              <li key={ref.id}>
+                                  <button onClick={() => handleOpenEditReferenceDialog(ref)} className="w-full text-left p-3 border rounded-lg hover:bg-gray-100 transition-colors">
+                                      <p className="font-semibold text-primary">{ref.name}</p>
+                                      <p className="text-sm text-muted-foreground">{ref.phone}</p>
+                                      <p className="text-sm text-muted-foreground">{ref.address}</p>
+                                      <p className="text-sm text-muted-foreground">Parentesco: {ref.relationship}</p>
+                                  </button>
+                              </li>
+                          ))}
+                      </ul>
+                  )}
+              </CardContent>
+          </Card>
+        </main>
+      </div>
 
        <Dialog open={isRefDialogOpen} onOpenChange={setIsRefDialogOpen}>
           <DialogTrigger asChild>
@@ -400,5 +403,3 @@ export default function ClientDetailPage() {
     </div>
   );
 }
-
-    
