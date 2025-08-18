@@ -1,3 +1,5 @@
+
+'use client';
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -23,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, PlusCircle } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 
 const creditsData = [
   { id: 'CR-001', client: 'Alice Johnson', amount: 'C$ 10,000', interest: '10%', term: '6 Meses', dueDate: '2024-06-15', status: 'Activo' },
@@ -114,20 +117,23 @@ const CreditTable = ({ statusFilter }: { statusFilter?: string }) => {
 export default function CreditsPage() {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Créditos</h2>
-        <Button>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <h2 className="text-3xl font-bold tracking-tight text-center sm:text-left">Créditos</h2>
+        <Button className="w-full sm:w-auto">
           <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Crédito
         </Button>
       </div>
 
       <Tabs defaultValue="active" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="active">Activos</TabsTrigger>
-          <TabsTrigger value="pending">Pendientes de Aprobación</TabsTrigger>
-          <TabsTrigger value="paid">Pagados</TabsTrigger>
-          <TabsTrigger value="overdue">Vencidos</TabsTrigger>
-        </TabsList>
+        <ScrollArea>
+          <TabsList>
+            <TabsTrigger value="active">Activos</TabsTrigger>
+            <TabsTrigger value="pending">Pendientes de Aprobación</TabsTrigger>
+            <TabsTrigger value="paid">Pagados</TabsTrigger>
+            <TabsTrigger value="overdue">Vencidos</TabsTrigger>
+          </TabsList>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
         <TabsContent value="active">
           <CreditTable statusFilter="Activo" />
         </TabsContent>
