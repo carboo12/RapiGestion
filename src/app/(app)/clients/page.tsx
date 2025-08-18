@@ -1,31 +1,6 @@
 'use client';
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText, FolderKanban, Handshake, ShieldCheck, CreditCard } from "lucide-react"
-import { useState, useEffect, useRef } from "react";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -39,11 +14,11 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { nicaraguaData } from "@/lib/nicaragua-data";
 import { app } from "@/lib/firebase";
-import { getFirestore, collection, getDocs, addDoc, doc, setDoc, query, where } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc, query, where, onSnapshot } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
-
+import { useState, useEffect, useRef } from "react";
+import { Plus, User, MapPin, ChevronRight, Search, SlidersHorizontal, Loader2 } from "lucide-react";
 
 interface Client {
   id: string;
@@ -65,8 +40,8 @@ interface Client {
   centroTrabajo?: string;
   direccionTrabajo?: string;
   createdBy?: string;
-  hasGuarantees?: boolean;
-  hasReferences?: boolean;
+  activeCreditsCount?: number;
+  paidCreditsCount?: number;
 }
 
 interface Municipality {
@@ -76,12 +51,10 @@ interface Municipality {
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const [location, setLocation] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -99,20 +72,45 @@ export default function ClientsPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchClients = async () => {
-    try {
-      const db = getFirestore(app);
-      const clientsCol = collection(db, 'clients');
-      const clientSnapshot = await getDocs(clientsCol);
-      const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
-      setClients(clientList);
-    } catch (error) {
-      // Silently fail and show an empty table.
-    }
-  };
-
   useEffect(() => {
-    fetchClients();
+    const db = getFirestore(app);
+    const clientsCol = collection(db, 'clients');
+    
+    setLoading(true);
+
+    const unsubscribe = onSnapshot(clientsCol, async (snapshot) => {
+        const clientListPromises = snapshot.docs.map(async (clientDoc) => {
+            const clientData = clientDoc.data() as Omit<Client, 'id' | 'activeCreditsCount' | 'paidCreditsCount'>;
+            
+            const creditsQuery = query(collection(db, "credits"), where("clientId", "==", clientDoc.id));
+            const creditsSnapshot = await getDocs(creditsQuery);
+            
+            let activeCount = 0;
+            let paidCount = 0;
+            creditsSnapshot.forEach((creditDoc) => {
+                const creditData = creditDoc.data();
+                if (creditData.status === 'Activo') activeCount++;
+                else if (creditData.status === 'Pagado') paidCount++;
+            });
+
+            return {
+                id: clientDoc.id,
+                ...clientData,
+                activeCreditsCount: activeCount,
+                paidCreditsCount: paidCount
+            } as Client;
+        });
+
+        const clientList = await Promise.all(clientListPromises);
+        setClients(clientList);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching clients:", error);
+        setLoading(false);
+        // Silently fail and show an empty list.
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -210,50 +208,9 @@ export default function ClientsPage() {
     }
     setOpen(true);
   }
-
-  const handleViewDetails = (client: Client) => {
-    setSelectedClient(client);
-    setIsDetailsOpen(true);
-  }
   
-  const handleViewExpediente = (client: Client) => {
-    router.push(`/clients/${client.id}`);
-  }
-
-  const handleGrantCredit = async (client: Client) => {
-    const db = getFirestore(app);
-
-    const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", client.id));
-    const referencesQuery = query(collection(db, "references"), where("clientId", "==", client.id));
-
-    const guaranteesSnapshot = await getDocs(guaranteesQuery);
-    const referencesSnapshot = await getDocs(referencesQuery);
-
-    const hasGuarantees = !guaranteesSnapshot.empty;
-    const hasReferences = !referencesSnapshot.empty;
-
-    if (!hasGuarantees || !hasReferences) {
-        let missing = [];
-        if (!hasGuarantees) missing.push("garantías");
-        if (!hasReferences) missing.push("referencias");
-
-        toast({
-            variant: "destructive",
-            title: "Cliente no apto para Crédito",
-            description: `Faltan ${missing.join(' y ')} en el expediente del cliente.`,
-        });
-        return;
-    }
-    
-    // Store client info and redirect
-    const clientForCredit = {
-        id: client.id,
-        name: `${client.primerNombre} ${client.apellido}`,
-        hasGuarantees: true,
-        hasReferences: true,
-    };
-    localStorage.setItem('clientForCredit', JSON.stringify(clientForCredit));
-    router.push('/credits');
+  const handleClientClick = (client: Client) => {
+    // router.push(`/clients/${client.id}`);
   };
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -272,7 +229,7 @@ export default function ClientsPage() {
     }
 
     const formData = new FormData(e.currentTarget);
-    const clientData: Omit<Client, 'id' | 'hasGuarantees' | 'hasReferences'> = {
+    const clientData: Omit<Client, 'id'> = {
       primerNombre: formData.get('primer-nombre') as string,
       segundoNombre: formData.get('segundo-nombre') as string,
       apellido: formData.get('apellido') as string,
@@ -299,23 +256,14 @@ export default function ClientsPage() {
         const clientRef = doc(db, "clients", editingClient.id);
         await setDoc(clientRef, clientData, { merge: true });
         
-        const updatedClient: Client = { 
-          ...editingClient, 
-          ...clientData,
-        };
-        setClients(clients.map(c => c.id === editingClient.id ? updatedClient : c));
-
         toast({
           title: "Éxito",
           description: "Cliente actualizado correctamente.",
         });
 
       } else {
-        const newClientData = {
-          ...clientData,
-        };
-        const docRef = await addDoc(collection(db, "clients"), newClientData);
-        setClients([...clients, { id: docRef.id, ...newClientData }]);
+        const newClientData = { ...clientData };
+        await addDoc(collection(db, "clients"), newClientData);
         toast({
           title: "Éxito",
           description: "Cliente agregado correctamente.",
@@ -337,92 +285,82 @@ export default function ClientsPage() {
       });
     }
   }
+  
+  const ClientItem = ({ client, onClick }: { client: Client; onClick: (client: Client) => void }) => {
+    const fullName = [client.primerNombre, client.segundoNombre, client.apellido, client.segundoApellido]
+      .filter(Boolean)
+      .join(' ')
+      .toUpperCase();
 
-  const DetailRow = ({ label, value, icon }: { label: string; value?: string | null; icon: React.ElementType }) => {
-    const Icon = icon;
-    if (!value) return null;
     return (
-      <div className="flex items-start text-sm">
-        <Icon className="w-4 h-4 mr-2 mt-0.5 text-primary" />
-        <span className="font-semibold">{label}:</span>
-        <span className="ml-2 text-muted-foreground">{value}</span>
-      </div>
+      <li
+        onClick={() => onClick(client)}
+        className="flex items-center p-3 bg-card rounded-lg border-2 border-green-400 cursor-pointer hover:bg-green-50 transition-colors"
+      >
+        <div className="flex-shrink-0 h-11 w-11 rounded-full bg-green-500 flex items-center justify-center mr-4">
+          <User className="h-6 w-6 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm truncate">{fullName}</p>
+          <div className="text-xs text-muted-foreground mt-1">
+            <span>Telefono: <span className="font-semibold text-blue-600">{client.phone}</span></span>
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            <span>Creditos Activos: <span className="font-semibold text-green-600">{client.activeCreditsCount || 0}</span></span>
+            <span className="ml-2">Ciclos: <span className="font-semibold text-yellow-600">{client.paidCreditsCount || 0}</span></span>
+          </div>
+        </div>
+        <ChevronRight className="h-6 w-6 text-green-500 ml-2" />
+      </li>
     );
   };
   
   return (
-    <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <div className="space-y-4">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
-          </div>
-          <div>
-            <Button onClick={() => handleOpenDialog(null)}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Agregar Cliente
-            </Button>
-          </div>
+    <div className="relative h-full flex flex-col">
+      <header className="flex items-center justify-between p-4">
+         <h1 className="text-lg font-bold text-green-600">Clientes</h1>
+         <span className="text-xs text-muted-foreground">v 10.1.1</span>
+      </header>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Todos los Clientes</CardTitle>
-              <CardDescription>
-                Una lista de todos los clientes registrados en RapiGestion.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID de Cliente</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Teléfono</TableHead>
-                    <TableHead>Dirección</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Acciones</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clients.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center">No hay clientes registrados.</TableCell>
-                    </TableRow>
-                  )}
-                  {clients.map((client) => (
-                    <TableRow key={client.id}>
-                      <TableCell className="font-medium">{client.id.substring(0,8).toUpperCase()}</TableCell>
-                      <TableCell>{`${client.primerNombre} ${client.apellido}`}</TableCell>
-                      <TableCell>{client.phone}</TableCell>
-                      <TableCell>{client.direccion}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleViewDetails(client)}>Ver Detalles</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenDialog(client)}>Editar Cliente</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleViewExpediente(client)}>Expediente</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleGrantCredit(client)}>
-                               <CreditCard className="mr-2 h-4 w-4" />
-                               <span>Otorgar Crédito</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+      <div className="px-4 pb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input placeholder="Buscar cliente..." className="pl-10 pr-10 rounded-full bg-white border-gray-300" />
+           <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8">
+            <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
+          </Button>
         </div>
+      </div>
+      
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <main className="flex-1 overflow-y-auto px-4 pb-20">
+            {clients.length > 0 ? (
+                <ul className="space-y-3">
+                    {clients.map(client => (
+                        <ClientItem key={client.id} client={client} onClick={handleClientClick}/>
+                    ))}
+                </ul>
+            ) : (
+                <div className="text-center py-10">
+                    <p className="text-muted-foreground">No hay clientes registrados.</p>
+                </div>
+            )}
+        </main>
+      )}
+
+      <Button
+        onClick={() => handleOpenDialog(null)}
+        className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white"
+      >
+        <Plus className="h-8 w-8" />
+        <span className="sr-only">Agregar Cliente</span>
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>{isEditing ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}</DialogTitle>
@@ -529,57 +467,8 @@ export default function ClientsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle>Detalles del Cliente</DialogTitle>
-            <DialogDescription>
-              Información completa del cliente seleccionado.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedClient && (
-            <div className="flex-1 overflow-y-auto px-1">
-              <Tabs defaultValue="personal" className="w-full p-5">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="personal"><User className="mr-2"/>Personal</TabsTrigger>
-                  <TabsTrigger value="location"><MapIcon className="mr-2"/>Ubicación</TabsTrigger>
-                  <TabsTrigger value="work"><Briefcase className="mr-2"/>Laboral</TabsTrigger>
-                </TabsList>
-                <TabsContent value="personal">
-                   <div className="space-y-4 py-4">
-                     <DetailRow icon={User} label="Nombre Completo" value={`${selectedClient.primerNombre} ${selectedClient.segundoNombre || ''} ${selectedClient.apellido} ${selectedClient.segundoApellido || ''}`} />
-                     <DetailRow icon={FileText} label="Cédula" value={selectedClient.cedula} />
-                     <DetailRow icon={Phone} label="Teléfono" value={selectedClient.phone} />
-                     <DetailRow icon={User} label="Sexo" value={selectedClient.sexo} />
-                     <DetailRow icon={User} label="Estado Civil" value={selectedClient.estadoCivil} />
-                   </div>
-                </TabsContent>
-                <TabsContent value="location">
-                  <div className="space-y-4 py-4">
-                     <DetailRow icon={MapIcon} label="Departamento" value={selectedClient.departamento} />
-                     <DetailRow icon={MapIcon} label="Municipio" value={selectedClient.municipio} />
-                     <DetailRow icon={MapIcon} label="Comunidad" value={selectedClient.comunidad} />
-                     <DetailRow icon={MapIcon} label="Dirección" value={selectedClient.direccion} />
-                     <DetailRow icon={MapPin} label="Coordenadas GPS" value={selectedClient.location} />
-                   </div>
-                </TabsContent>
-                <TabsContent value="work">
-                    <div className="space-y-4 py-4">
-                      <DetailRow icon={Briefcase} label="Actividad Económica" value={selectedClient.actividadEconomica} />
-                      <DetailRow icon={Briefcase} label="Profesión" value={selectedClient.profesion} />
-                      <DetailRow icon={Building} label="Centro de Trabajo" value={selectedClient.centroTrabajo} />
-                      <DetailRow icon={MapIcon} label="Dirección del Trabajo" value={selectedClient.direccionTrabajo} />
-                    </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
-          <DialogFooter className="p-6 pt-0">
-            <Button onClick={() => setIsDetailsOpen(false)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   )
 }
+
+    
