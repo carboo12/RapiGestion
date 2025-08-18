@@ -155,8 +155,8 @@ export default function CreditsPage() {
   const [credits, setCredits] = useState<Credit[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [openNewCredit, setOpenNewCredit] = useState(false);
-  const [disbursementDate, setDisbursementDate] = useState<string | undefined>();
-  const [firstPaymentDate, setFirstPaymentDate] = useState<string | undefined>();
+  const [disbursementDate, setDisbursementDate] = useState('');
+  const [firstPaymentDate, setFirstPaymentDate] = useState('');
 
   const { toast } = useToast();
 
@@ -208,8 +208,8 @@ export default function CreditsPage() {
     if (!open) {
       // Reset states when dialog closes
       setSelectedClient(null);
-      setDisbursementDate(undefined);
-      setFirstPaymentDate(undefined);
+      setDisbursementDate('');
+      setFirstPaymentDate('');
     }
     setOpenNewCredit(open);
   }
@@ -267,11 +267,10 @@ export default function CreditsPage() {
         options.push(i);
     }
     options.push(10.44);
-    
-    for (let i = 10.5; i <= 40; i += 0.5) {
-        if (i === 11 || i === 12 || i > 12) {
-            options.push(i)
-        }
+    options.push(10.5);
+
+    for (let i = 11; i <= 40; i += 0.5) {
+        options.push(i);
     }
     return options.sort((a,b) => a-b);
   };
@@ -416,5 +415,3 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
-
-    
