@@ -33,14 +33,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react"
 import { app } from "@/lib/firebase"
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
-import { getFirestore, collection, doc, setDoc, getDocs } from "firebase/firestore"
+import { getFirestore, collection, doc, setDoc, onSnapshot, Timestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  status?: 'online' | 'offline';
+  lastSeen?: Timestamp;
 }
 
 const getRoleBadgeVariant = (role: string) => {
@@ -52,32 +56,42 @@ const getRoleBadgeVariant = (role: string) => {
   }
 }
 
+const formatLastSeen = (timestamp: Timestamp | undefined) => {
+    if (!timestamp) return 'Nunca';
+    const date = timestamp.toDate();
+    if (isToday(date)) {
+        return `hoy a las ${format(date, 'p', { locale: es })}`;
+    }
+    if (isYesterday(date)) {
+        return `ayer a las ${format(date, 'p', { locale: es })}`;
+    }
+    return format(date, 'P p', { locale: es });
+};
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [open, setOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
-  const fetchUsers = async () => {
-    try {
-      const db = getFirestore(app);
-      const usersCol = collection(db, 'users');
-      const userSnapshot = await getDocs(usersCol);
-      const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+  useEffect(() => {
+    const db = getFirestore(app);
+    const usersCol = collection(db, 'users');
+    
+    const unsubscribe = onSnapshot(usersCol, (snapshot) => {
+      const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
       setUsers(userList);
-    } catch (error) {
+    }, (error) => {
       console.error("Error fetching users: ", error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los usuarios.",
         variant: "destructive",
-      })
-    }
-  };
+      });
+    });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+    return () => unsubscribe();
+  }, [toast]);
 
   const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -97,6 +111,8 @@ export default function UsersPage() {
         name,
         email,
         role,
+        status: 'offline',
+        lastSeen: Timestamp.now()
       });
 
       toast({
@@ -104,7 +120,6 @@ export default function UsersPage() {
         description: "Usuario agregado correctamente.",
       });
 
-      setUsers([...users, { id: user.uid, name, email, role }]);
       setOpen(false);
       e.currentTarget.reset();
 
@@ -128,7 +143,7 @@ export default function UsersPage() {
         <Card>
           <CardHeader>
             <CardTitle>Todos los Usuarios</CardTitle>
-            <CardDescription>Gestiona las cuentas de usuario y sus roles.</CardDescription>
+            <CardDescription>Gestiona las cuentas de usuario, sus roles y su estado.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -137,6 +152,7 @@ export default function UsersPage() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Rol</TableHead>
+                  <TableHead>Estado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -146,6 +162,28 @@ export default function UsersPage() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                       <div className="flex items-center gap-2">
+                        {user.status === 'online' ? (
+                          <>
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            <span>En línea</span>
+                          </>
+                        ) : (
+                           <>
+                            <span className="relative flex h-2 w-2">
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-400"></span>
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                                Últ. vez {formatLastSeen(user.lastSeen)}
+                            </span>
+                           </>
+                        )}
+                       </div>
                     </TableCell>
                   </TableRow>
                 ))}

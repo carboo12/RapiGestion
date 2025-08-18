@@ -15,7 +15,7 @@ import Image from 'next/image';
 import { Logo } from '@/components/logo';
 import { Bell, MapPinned } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
@@ -59,6 +59,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleSignOut = useCallback(() => {
     const auth = getAuth(app);
+    const db = getFirestore(app);
+    if(auth.currentUser){
+      const userDocRef = doc(db, "users", auth.currentUser.uid);
+      updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
+    }
     signOut(auth)
       .then(() => {
         toast({
@@ -87,12 +92,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setUser(user);
         
         const userDocRef = doc(db, "users", user.uid);
+        await updateDoc(userDocRef, { status: 'online', lastSeen: serverTimestamp() });
+
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
             setUserRole(userDocSnap.data().role);
         }
 
-        // Subscribe to notifications
         const notificationsQuery = query(collection(db, `users/${user.uid}/notifications`), where('read', '==', false));
         const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
           const newNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
@@ -100,9 +106,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           setUnreadCount(newNotifications.length);
         });
         setLoading(false);
-
-        // In a real app, you would want to return this unsubscribe function
-        // return () => unsubscribeNotifications();
 
       } else {
         setUser(null);
@@ -113,36 +116,56 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [router]);
 
-
   useEffect(() => {
-    if (user) { // Only set up inactivity timer if user is logged in
-        let activityTimer: NodeJS.Timeout;
+    if (!user) return;
 
-        const resetTimer = () => {
-          clearTimeout(activityTimer);
-          activityTimer = setTimeout(() => {
-             const auth = getAuth(app);
-             if (auth.currentUser) {
-                signOut(auth).then(() => {
-                    toast({
-                        title: "Sesión cerrada por inactividad",
-                        description: "Tu sesión ha sido cerrada automáticamente.",
-                    });
-                    router.push('/');
+    const db = getFirestore(app);
+    const userDocRef = doc(db, 'users', user.uid);
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
+      } else {
+        updateDoc(userDocRef, { status: 'online' });
+      }
+    };
+
+    const handleBeforeUnload = () => {
+        updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    let activityTimer: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      clearTimeout(activityTimer);
+      activityTimer = setTimeout(() => {
+          const auth = getAuth(app);
+          if (auth.currentUser) {
+            updateDoc(doc(db, "users", auth.currentUser.uid), { status: 'offline', lastSeen: serverTimestamp() });
+            signOut(auth).then(() => {
+                toast({
+                    title: "Sesión cerrada por inactividad",
+                    description: "Tu sesión ha sido cerrada automáticamente.",
                 });
-             }
-          }, 30 * 60 * 1000); // 30 minutos
-        };
+                router.push('/');
+            });
+          }
+      }, 30 * 60 * 1000); // 30 minutos
+    };
 
-        const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-        events.forEach(event => window.addEventListener(event, resetTimer));
-        resetTimer();
+    const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+    resetTimer();
 
-        return () => {
-          clearTimeout(activityTimer);
-          events.forEach(event => window.removeEventListener(event, resetTimer));
-        };
-    }
+    return () => {
+      clearTimeout(activityTimer);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [user, router, toast]);
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -232,5 +255,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
   );
 }
-
-    
