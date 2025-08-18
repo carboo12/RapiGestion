@@ -1,9 +1,12 @@
+
+'use client';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Map, MapPin, Phone, PlusCircle, Navigation } from "lucide-react";
+import Link from "next/link";
 
 const collectors = [
   { 
@@ -33,12 +36,9 @@ const collectors = [
 
 export default function RoutesPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Rutas Diarias</h2>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Asignar Nueva Ruta
-        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
@@ -91,6 +91,15 @@ export default function RoutesPage() {
           </Card>
         ))}
       </div>
+      
+       <Link href="/routes/assign">
+        <Button
+          className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+        >
+          <PlusCircle className="h-7 w-7" />
+          <span className="text-xs mt-1">Agregar</span>
+        </Button>
+      </Link>
     </div>
   )
 }
