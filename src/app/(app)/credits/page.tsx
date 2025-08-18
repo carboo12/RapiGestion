@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { AlertCircle, MoreHorizontal, PlusCircle } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
@@ -41,13 +41,13 @@ import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
 
 interface Client {
   id: string;
-  primerNombre: string;
-  apellido: string;
-  hasGuarantees?: boolean;
-  hasReferences?: boolean;
+  name: string;
+  hasGuarantees: boolean;
+  hasReferences: boolean;
 }
 
 interface Credit {
@@ -157,26 +157,20 @@ const CreditTable = ({ credits, statusFilter }: { credits: Credit[], statusFilte
 
 export default function CreditsPage() {
   const [credits, setCredits] = useState<Credit[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [openNewCredit, setOpenNewCredit] = useState(false);
-  const [isLoadingClientData, setIsLoadingClientData] = useState(false);
   const [disbursementDate, setDisbursementDate] = useState<Date | undefined>();
   const [firstPaymentDate, setFirstPaymentDate] = useState<Date | undefined>();
 
   const { toast } = useToast();
 
-  const fetchClientsAndCredits = async () => {
+  const fetchCredits = async () => {
     const db = getFirestore(app);
     try {
-      // Fetch clients
+      // Fetch clients to map names
       const clientsCol = collection(db, 'clients');
       const clientSnapshot = await getDocs(clientsCol);
-      const clientList = clientSnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      } as Client));
-      setClients(clientList);
+      const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       // Fetch credits
       const creditsCol = collection(db, 'credits');
@@ -203,43 +197,26 @@ export default function CreditsPage() {
   };
 
   useEffect(() => {
-    fetchClientsAndCredits();
+    fetchCredits();
+
+    const clientForCreditJSON = localStorage.getItem('clientForCredit');
+    if (clientForCreditJSON) {
+        const clientData = JSON.parse(clientForCreditJSON);
+        setSelectedClient(clientData);
+        setOpenNewCredit(true);
+        localStorage.removeItem('clientForCredit');
+    }
   }, []);
-  
-  const handleClientSelection = async (clientId: string) => {
-    if (!clientId) {
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      // Reset states when dialog closes
       setSelectedClient(null);
-      return;
+      setDisbursementDate(undefined);
+      setFirstPaymentDate(undefined);
     }
-    
-    setIsLoadingClientData(true);
-    const db = getFirestore(app);
-    
-    try {
-      const clientRef = doc(db, 'clients', clientId);
-      const clientSnap = await getDoc(clientRef);
-
-      if (clientSnap.exists()) {
-          const clientData = { id: clientSnap.id, ...clientSnap.data() } as Client;
-
-          const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", clientId));
-          const referencesQuery = query(collection(db, "references"), where("clientId", "==", clientId));
-
-          const guaranteesSnapshot = await getDocs(guaranteesQuery);
-          const referencesSnapshot = await getDocs(referencesQuery);
-
-          clientData.hasGuarantees = !guaranteesSnapshot.empty;
-          clientData.hasReferences = !referencesSnapshot.empty;
-          
-          setSelectedClient(clientData);
-      }
-    } catch (error) {
-      console.error("Error validating client:", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo verificar la información del cliente.'});
-    } finally {
-      setIsLoadingClientData(false);
-    }
-  };
+    setOpenNewCredit(open);
+  }
   
   const handleNewCreditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -275,13 +252,9 @@ export default function CreditsPage() {
             description: "Nuevo crédito agregado correctamente.",
         });
         
-        // Reset states and close dialog
-        setOpenNewCredit(false);
-        setSelectedClient(null);
-        setDisbursementDate(undefined);
-        setFirstPaymentDate(undefined);
+        handleDialogClose(false);
         e.currentTarget.reset();
-        fetchClientsAndCredits(); // Refetch credits to update the table
+        fetchCredits();
     } catch (error) {
         console.error("Error creating credit:", error);
         toast({
@@ -293,15 +266,13 @@ export default function CreditsPage() {
   }
 
   return (
-    <Dialog open={openNewCredit} onOpenChange={setOpenNewCredit}>
+    <Dialog open={openNewCredit} onOpenChange={handleDialogClose}>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <h2 className="text-3xl font-bold tracking-tight text-center sm:text-left">Créditos</h2>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto" onClick={() => toast({ title: "Acción no disponible", description: "Por favor, selecciona un cliente desde la página de Clientes para otorgar un crédito."})}>
               <PlusCircle className="mr-2 h-4 w-4" /> Nuevo Crédito
             </Button>
-          </DialogTrigger>
         </div>
 
         <Tabs defaultValue="active" className="space-y-4">
@@ -333,40 +304,20 @@ export default function CreditsPage() {
         <DialogHeader>
           <DialogTitle>Otorgar Nuevo Crédito</DialogTitle>
           <DialogDescription>
-            Selecciona un cliente y rellena los detalles del crédito.
+            {selectedClient ? `Rellena los detalles del crédito para ${selectedClient.name}.` : ''}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="client-select">Seleccionar Cliente</Label>
-            <Select onValueChange={handleClientSelection} disabled={isLoadingClientData}>
-              <SelectTrigger id="client-select">
-                <SelectValue placeholder="Busca o selecciona un cliente..." />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map(client => (
-                  <SelectItem key={client.id} value={client.id}>{`${client.primerNombre} ${client.apellido}`}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           
-          {isLoadingClientData && <p className="text-sm text-muted-foreground">Verificando cliente...</p>}
-
-          {selectedClient && (!selectedClient.hasGuarantees || !selectedClient.hasReferences) && (
-               <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Cliente no apto para Crédito</AlertTitle>
-                  <AlertDescription>
-                      {!selectedClient.hasGuarantees && <p>- El cliente no tiene garantías registradas.</p>}
-                      {!selectedClient.hasReferences && <p>- El cliente no tiene referencias registradas.</p>}
-                      <p className="mt-2">Por favor, completa la información del cliente en la sección de Expediente.</p>
-                  </AlertDescription>
-              </Alert>
-          )}
-
-          {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
+          {selectedClient && (
               <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4">
+                  <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Cliente Elegido: {selectedClient.name}</AlertTitle>
+                      <AlertDescription>
+                          El cliente cumple con los requisitos de garantías y referencias.
+                      </AlertDescription>
+                  </Alert>
                   <Separator />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -468,8 +419,8 @@ export default function CreditsPage() {
 
         </div>
          <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpenNewCredit(false)}>Cancelar</Button>
-              {selectedClient && selectedClient.hasGuarantees && selectedClient.hasReferences && (
+              <Button type="button" variant="ghost" onClick={() => handleDialogClose(false)}>Cancelar</Button>
+              {selectedClient && (
                   <Button type="submit" form="new-credit-form">Guardar Crédito</Button>
               )}
         </DialogFooter>

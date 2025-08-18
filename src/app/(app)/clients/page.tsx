@@ -20,9 +20,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText, FolderKanban } from "lucide-react"
+import { MoreHorizontal, PlusCircle, MapPin, Loader2, User, Phone, Map as MapIcon, Briefcase, Building, FileText, FolderKanban, Handshake, ShieldCheck, CreditCard } from "lucide-react"
 import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
@@ -38,7 +39,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { nicaraguaData } from "@/lib/nicaragua-data";
 import { app } from "@/lib/firebase";
-import { getFirestore, collection, getDocs, addDoc, doc, setDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, doc, setDoc, query, where } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
@@ -64,6 +65,8 @@ interface Client {
   centroTrabajo?: string;
   direccionTrabajo?: string;
   createdBy?: string;
+  hasGuarantees?: boolean;
+  hasReferences?: boolean;
 }
 
 interface Municipality {
@@ -114,12 +117,11 @@ export default function ClientsPage() {
 
   useEffect(() => {
     if (editingClient) {
-      const department = nicaraguaData.find(d => d.departamento === editingClient.departamento);
-      const newMunicipalities = department ? department.municipios : [];
-      setMunicipalities(newMunicipalities);
+      handleDepartmentChange(editingClient.departamento, false)
+      handleMunicipalityChange(editingClient.municipio, false);
 
-      const municipality = newMunicipalities.find(m => m.nombre === editingClient.municipio);
-      setCommunities(municipality ? municipality.comunidades : []);
+      setSelectedDepartment(editingClient.departamento);
+      setSelectedMunicipality(editingClient.municipio);
 
       setLocation(editingClient.location || null);
     }
@@ -177,16 +179,18 @@ export default function ClientsPage() {
     );
   };
 
-  const handleDepartmentChange = (value: string) => {
+  const handleDepartmentChange = (value: string, reset = true) => {
     setSelectedDepartment(value);
     const department = nicaraguaData.find(d => d.departamento === value);
     const newMunicipalities = department ? department.municipios : [];
     setMunicipalities(newMunicipalities);
-    setSelectedMunicipality(null);
-    setCommunities([]);
+    if(reset) {
+        setSelectedMunicipality(null);
+        setCommunities([]);
+    }
   }
 
-  const handleMunicipalityChange = (value: string) => {
+  const handleMunicipalityChange = (value: string, reset = true) => {
     setSelectedMunicipality(value);
     const municipality = municipalities.find(m => m.nombre === value);
     setCommunities(municipality ? municipality.comunidades : []);
@@ -199,6 +203,10 @@ export default function ClientsPage() {
     } else {
       setEditingClient(null);
       setIsEditing(false);
+      setLocation(null);
+      if (formRef.current) {
+        formRef.current.reset();
+      }
     }
     setOpen(true);
   }
@@ -211,6 +219,42 @@ export default function ClientsPage() {
   const handleViewExpediente = (client: Client) => {
     router.push(`/clients/${client.id}`);
   }
+
+  const handleGrantCredit = async (client: Client) => {
+    const db = getFirestore(app);
+
+    const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", client.id));
+    const referencesQuery = query(collection(db, "references"), where("clientId", "==", client.id));
+
+    const guaranteesSnapshot = await getDocs(guaranteesQuery);
+    const referencesSnapshot = await getDocs(referencesQuery);
+
+    const hasGuarantees = !guaranteesSnapshot.empty;
+    const hasReferences = !referencesSnapshot.empty;
+
+    if (!hasGuarantees || !hasReferences) {
+        let missing = [];
+        if (!hasGuarantees) missing.push("garantías");
+        if (!hasReferences) missing.push("referencias");
+
+        toast({
+            variant: "destructive",
+            title: "Cliente no apto para Crédito",
+            description: `Faltan ${missing.join(' y ')} en el expediente del cliente.`,
+        });
+        return;
+    }
+    
+    // Store client info and redirect
+    const clientForCredit = {
+        id: client.id,
+        name: `${client.primerNombre} ${client.apellido}`,
+        hasGuarantees: true,
+        hasReferences: true,
+    };
+    localStorage.setItem('clientForCredit', JSON.stringify(clientForCredit));
+    router.push('/credits');
+  };
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -228,7 +272,7 @@ export default function ClientsPage() {
     }
 
     const formData = new FormData(e.currentTarget);
-    const clientData: Omit<Client, 'id'> = {
+    const clientData: Omit<Client, 'id' | 'hasGuarantees' | 'hasReferences'> = {
       primerNombre: formData.get('primer-nombre') as string,
       segundoNombre: formData.get('segundo-nombre') as string,
       apellido: formData.get('apellido') as string,
@@ -255,7 +299,7 @@ export default function ClientsPage() {
         const clientRef = doc(db, "clients", editingClient.id);
         await setDoc(clientRef, clientData, { merge: true });
         
-        const updatedClient = { 
+        const updatedClient: Client = { 
           ...editingClient, 
           ...clientData,
         };
@@ -364,6 +408,11 @@ export default function ClientsPage() {
                             <DropdownMenuItem onClick={() => handleViewDetails(client)}>Ver Detalles</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleOpenDialog(client)}>Editar Cliente</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleViewExpediente(client)}>Expediente</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleGrantCredit(client)}>
+                               <CreditCard className="mr-2 h-4 w-4" />
+                               <span>Otorgar Crédito</span>
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -424,7 +473,7 @@ export default function ClientsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select name="municipio" disabled={!selectedDepartment && !editingClient} onValueChange={handleMunicipalityChange} defaultValue={editingClient?.municipio}>
+                  <Select name="municipio" onValueChange={handleMunicipalityChange} defaultValue={editingClient?.municipio} value={selectedMunicipality ?? ''}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione un municipio..." />
                     </SelectTrigger>
@@ -434,7 +483,7 @@ export default function ClientsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select name="comunidad" disabled={!selectedMunicipality && !editingClient} defaultValue={editingClient?.comunidad}>
+                  <Select name="comunidad" defaultValue={editingClient?.comunidad}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione una comunidad..." />
                     </SelectTrigger>
