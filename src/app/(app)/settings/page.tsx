@@ -78,25 +78,6 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuración de Préstamos</CardTitle>
-          <CardDescription>Configura los parámetros por defecto para nuevos créditos.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="interest-rate">Tasa de Interés por Defecto (%)</Label>
-              <Input id="interest-rate" type="number" defaultValue="12" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="max-loan">Monto Máximo de Préstamo (C$)</Label>
-              <Input id="max-loan" type="number" defaultValue="50000" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
