@@ -231,7 +231,7 @@ export default function AssignRoutePage() {
                         </TableCell>
                         <TableCell className="font-medium">{credit.clientName}</TableCell>
                         <TableCell className="text-muted-foreground">{credit.clientAddress}</TableCell>
-                        <TableCell className="text-right">C$ {credit.amountToPay.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">C$ {(credit.amountToPay || 0).toFixed(2)}</TableCell>
                     </TableRow>
                     ))}
                 </TableBody>
@@ -253,5 +253,3 @@ export default function AssignRoutePage() {
     </div>
   );
 }
-
-    
