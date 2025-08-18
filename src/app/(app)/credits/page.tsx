@@ -320,7 +320,7 @@ export default function CreditsPage() {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 -mx-6 px-6 no-scrollbar">
+        <div className="flex-1 overflow-y-auto -mx-6 px-6 no-scrollbar">
           {selectedClient && (
               <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4 py-4">
                   <Alert>
