@@ -130,7 +130,7 @@ export default function NoCobradosPage() {
                         </Avatar>
                         <div className="flex-1">
                         <p className="font-semibold text-sm uppercase">{credit.clientName}</p>
-                        <p className="text-blue-600 font-bold text-sm">Cancelación: C$ {credit.balance.toFixed(2)}</p>
+                        <p className="text-blue-600 font-bold text-sm">Cancelación: C$ {(credit.balance || 0).toFixed(2)}</p>
                         </div>
                         <div className={`flex items-center justify-center h-6 w-6 rounded-full border-2 ${classes.border}`}>
                         <ChevronRight className={`h-5 w-5 ${classes.arrow}`} />
