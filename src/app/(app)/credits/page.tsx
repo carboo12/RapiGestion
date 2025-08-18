@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +9,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { ChevronRight, SlidersHorizontal, User, Search, Loader2 } from "lucide-react"
 import packageJson from "../../../../package.json";
+import { useRouter } from "next/navigation";
 
 
 interface Credit {
@@ -27,7 +27,7 @@ interface Credit {
   status: 'Activo' | 'Pagado' | 'Vencido';
 }
 
-const CreditItem = ({ credit }: { credit: Credit }) => {
+const CreditItem = ({ credit, onClick }: { credit: Credit, onClick: (creditId: string) => void }) => {
     const formatDate = (timestamp: Timestamp | null) => {
         if (!timestamp) return 'N/A';
         try {
@@ -39,11 +39,14 @@ const CreditItem = ({ credit }: { credit: Credit }) => {
     }
 
     // A simple logic to determine if the due date should be red
-    const isOverdue = new Date(credit.firstPaymentDate.toDate()) < new Date() && credit.status !== 'Pagado';
+    const isOverdue = credit.firstPaymentDate && new Date(credit.firstPaymentDate.toDate()) < new Date() && credit.status !== 'Pagado';
 
     return (
         <li className="list-none">
-            <button className="w-full flex items-center p-3 bg-card rounded-full border-2 border-green-400 cursor-pointer hover:bg-green-50 transition-colors text-left">
+            <button 
+              onClick={() => onClick(credit.id)}
+              className="w-full flex items-center p-3 bg-card rounded-lg border-2 border-green-400 cursor-pointer hover:bg-green-50 transition-colors text-left"
+            >
                 <div className="flex-shrink-0 h-11 w-11 rounded-full bg-green-500 flex items-center justify-center mr-4">
                     <User className="h-6 w-6 text-white" />
                 </div>
@@ -67,6 +70,7 @@ export default function CreditsPage() {
   const [credits, setCredits] = useState<Credit[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const db = getFirestore(app);
@@ -102,6 +106,9 @@ export default function CreditsPage() {
     return () => unsubscribe();
   }, [toast]);
   
+  const handleCreditClick = (creditId: string) => {
+    router.push(`/credits/${creditId}`);
+  };
 
   return (
     <div className="relative h-full flex flex-col">
@@ -129,7 +136,7 @@ export default function CreditsPage() {
             {credits.length > 0 ? (
                 <ul className="space-y-3">
                     {credits.map(credit => (
-                        <CreditItem key={credit.id} credit={credit}/>
+                        <CreditItem key={credit.id} credit={credit} onClick={handleCreditClick}/>
                     ))}
                 </ul>
             ) : (
