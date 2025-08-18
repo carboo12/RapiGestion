@@ -2,14 +2,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, getFirestore, collection, query, where, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, collection, query, where, onSnapshot, addDoc, serverTimestamp, Timestamp, setDoc } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, PlusCircle, CreditCard, ShieldCheck, Monitor, UserPlus } from 'lucide-react';
+import { ArrowLeft, PlusCircle, CreditCard, ShieldCheck, Monitor, UserPlus, Save, X } from 'lucide-react';
 import Loading from '@/app/loading';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,6 +53,10 @@ export default function ClientDetailPage() {
 
   const [isRefDialogOpen, setIsRefDialogOpen] = useState(false);
   const [isGuaranteeDialogOpen, setIsGuaranteeDialogOpen] = useState(false);
+  
+  const [editingReference, setEditingReference] = useState<Reference | null>(null);
+  const [isEditRefDialogOpen, setIsEditRefDialogOpen] = useState(false);
+
 
   const params = useParams();
   const router = useRouter();
@@ -136,6 +140,31 @@ export default function ClientDetailPage() {
     }
   }
 
+  const handleEditReferenceSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingReference) return;
+
+    const formData = new FormData(e.currentTarget);
+    const updatedData = {
+        name: formData.get('ref-name') as string,
+        phone: formData.get('ref-phone') as string,
+        address: formData.get('ref-address') as string,
+        relationship: formData.get('ref-relationship') as string,
+    };
+
+    try {
+        const db = getFirestore(app);
+        const refDoc = doc(db, 'references', editingReference.id);
+        await setDoc(refDoc, updatedData, { merge: true });
+        toast({ title: "Éxito", description: "Referencia actualizada correctamente." });
+        setIsEditRefDialogOpen(false);
+        setEditingReference(null);
+    } catch (error) {
+        console.error("Error updating reference:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar la referencia.' });
+    }
+  };
+
   const handleGuaranteeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -177,6 +206,11 @@ export default function ClientDetailPage() {
     localStorage.setItem('clientForCredit', JSON.stringify(clientForCredit));
     router.push('/credits');
   }
+
+  const handleOpenEditReferenceDialog = (ref: Reference) => {
+    setEditingReference(ref);
+    setIsEditRefDialogOpen(true);
+  };
   
   if (loading) return <Loading />;
   
@@ -198,7 +232,7 @@ export default function ClientDetailPage() {
     .toUpperCase();
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 pb-20">
+    <div className="flex flex-col h-full bg-gray-50 pb-20 md:p-0 -m-4 md:-m-8">
        <header className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-10">
         <Button variant="ghost" size="icon" onClick={() => router.push('/clients')}>
           <ArrowLeft className="h-6 w-6 text-green-600" />
@@ -277,11 +311,13 @@ export default function ClientDetailPage() {
                 ) : (
                     <ul className="space-y-3">
                         {references.map(ref => (
-                            <li key={ref.id} className="p-3 border rounded-lg">
-                                <p className="font-semibold text-primary">{ref.name}</p>
-                                <p className="text-sm text-muted-foreground">{ref.phone}</p>
-                                <p className="text-sm text-muted-foreground">{ref.address}</p>
-                                <p className="text-sm text-muted-foreground">Parentesco: {ref.relationship}</p>
+                            <li key={ref.id}>
+                                <button onClick={() => handleOpenEditReferenceDialog(ref)} className="w-full text-left p-3 border rounded-lg hover:bg-gray-100 transition-colors">
+                                    <p className="font-semibold text-primary">{ref.name}</p>
+                                    <p className="text-sm text-muted-foreground">{ref.phone}</p>
+                                    <p className="text-sm text-muted-foreground">{ref.address}</p>
+                                    <p className="text-sm text-muted-foreground">Parentesco: {ref.relationship}</p>
+                                </button>
                             </li>
                         ))}
                     </ul>
@@ -326,7 +362,43 @@ export default function ClientDetailPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        <Dialog open={isEditRefDialogOpen} onOpenChange={setIsEditRefDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Editar Referencia</DialogTitle>
+                    <DialogClose asChild>
+                      <Button variant="ghost" size="icon" className="absolute top-4 right-4">
+                          <X className="h-4 w-4" />
+                      </Button>
+                    </DialogClose>
+                </DialogHeader>
+                 <form id="edit-ref-form" onSubmit={handleEditReferenceSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="ref-name">Nombre Completo</Label>
+                        <Input id="ref-name" name="ref-name" required defaultValue={editingReference?.name} />
+                    </div>
+                    <div>
+                        <Label htmlFor="ref-phone">Teléfono</Label>
+                        <Input id="ref-phone" name="ref-phone" required defaultValue={editingReference?.phone} />
+                    </div>
+                    <div>
+                        <Label htmlFor="ref-address">Dirección</Label>
+                        <Input id="ref-address" name="ref-address" required defaultValue={editingReference?.address} />
+                    </div>
+                    <div>
+                        <Label htmlFor="ref-relationship">Parentesco</Label>
+                        <Input id="ref-relationship" name="ref-relationship" required defaultValue={editingReference?.relationship} />
+                    </div>
+                 </form>
+                 <Button type="submit" form="edit-ref-form" className="fixed bottom-4 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white">
+                    <Save className="h-7 w-7" />
+                 </Button>
+            </DialogContent>
+        </Dialog>
+
     </div>
   );
 }
 
+    
