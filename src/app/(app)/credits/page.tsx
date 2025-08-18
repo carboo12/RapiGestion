@@ -319,10 +319,10 @@ export default function CreditsPage() {
             {selectedClient ? `Rellena los detalles del crédito para ${selectedClient.name}.` : ''}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 space-y-4 py-4 overflow-y-auto no-scrollbar">
+        <div className="flex-1 overflow-y-auto no-scrollbar">
           
           {selectedClient && (
-              <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4">
+              <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4 py-4">
                   <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertTitle>Cliente Elegido: {selectedClient.name}</AlertTitle>
@@ -387,7 +387,7 @@ export default function CreditsPage() {
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                          <Label>Fecha de Desembolso</Label>
-                         <Popover>
+                         <Popover modal={true}>
                           <PopoverTrigger asChild>
                               <Button
                               variant={"outline"}
@@ -412,7 +412,7 @@ export default function CreditsPage() {
                       </div>
                       <div className="space-y-2">
                           <Label>Fecha de Primer Pago</Label>
-                           <Popover>
+                           <Popover modal={true}>
                               <PopoverTrigger asChild>
                                   <Button
                                   variant={"outline"}
