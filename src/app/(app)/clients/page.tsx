@@ -369,7 +369,7 @@ export default function ClientsPage() {
               {isEditing ? 'Actualiza la información del cliente.' : 'Rellena la información para registrar a un nuevo cliente en el sistema.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6">
+          <div className="flex-1 overflow-y-auto px-6 no-scrollbar">
             <form id="client-form" ref={formRef} onSubmit={handleFormSubmit}>
               <div className="space-y-4 py-4">
                   <Input id="primer-nombre" name="primer-nombre" placeholder="Primer nombre..." required defaultValue={editingClient?.primerNombre} />
@@ -471,3 +471,5 @@ export default function ClientsPage() {
     </div>
   )
 }
+
+    
