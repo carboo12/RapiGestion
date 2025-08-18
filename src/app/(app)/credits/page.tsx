@@ -323,20 +323,13 @@ export default function CreditsPage() {
         </div>
 
         <Tabs defaultValue="active" className="space-y-4">
-          <ScrollArea>
-            <TabsList>
-              <TabsTrigger value="active">Activos</TabsTrigger>
-              <TabsTrigger value="pending">Pendientes de Aprobación</TabsTrigger>
-              <TabsTrigger value="paid">Pagados</TabsTrigger>
-              <TabsTrigger value="overdue">Vencidos</TabsTrigger>
-            </TabsList>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          <TabsList>
+            <TabsTrigger value="active">Activos</TabsTrigger>
+            <TabsTrigger value="paid">Pagados</TabsTrigger>
+            <TabsTrigger value="overdue">Vencidos</TabsTrigger>
+          </TabsList>
           <TabsContent value="active">
             <CreditTable credits={credits} statusFilter="Activo" />
-          </TabsContent>
-          <TabsContent value="pending">
-            <CreditTable credits={credits} statusFilter="Pendiente" />
           </TabsContent>
           <TabsContent value="paid">
             <CreditTable credits={credits} statusFilter="Pagado" />
