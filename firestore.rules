@@ -3,53 +3,29 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isUserAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isUserAdmin() {
-      return isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrador';
-    }
-
-    // Example rule: Only authenticated users can read or write to any document.
-    // match /{document=**} {
-    //   allow read, write: if isUserAuthenticated();
-    // }
-
     match /users/{userId} {
-      allow read: if isUserAuthenticated();
-      allow create: if isUserAuthenticated(); // Allow user creation via client SDK
-      allow write: if request.auth.uid == userId || isUserAdmin();
+      allow read, write: if request.auth != null;
     }
-    
-    match /users/{userId}/notifications/{notificationId} {
-        allow read, write: if request.auth.uid == userId;
-    }
-
     match /clients/{clientId} {
-      allow read, write: if isUserAuthenticated();
+      allow read, write: if request.auth != null;
     }
-    
     match /credits/{creditId} {
-      allow read, write: if isUserAuthenticated();
+      allow read, write: if request.auth != null;
     }
-
-    match /references/{referenceId} {
-        allow read, write: if isUserAuthenticated();
+    match /references/{refId} {
+      allow read, write: if request.auth != null;
     }
-
     match /guarantees/{guaranteeId} {
-        allow read, write: if isUserAuthenticated();
+      allow read, write: if request.auth != null;
     }
-    
-    match /payments/{paymentId} {
-        allow read, write: if isUserAuthenticated();
-    }
-
     match /routes/{routeId} {
-        allow read, write: if isUserAuthenticated();
+      allow read, write: if request.auth != null;
     }
-
+    match /payments/{paymentId} {
+        allow read, write: if request.auth != null;
+    }
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if request.auth.uid == userId;
+    }
   }
 }
