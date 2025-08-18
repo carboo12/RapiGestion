@@ -46,6 +46,8 @@ interface Client {
   hasReferences: boolean;
 }
 
+type PaymentFrequency = 'diario' | 'semanal' | 'quincenal' | 'mensual';
+
 interface Credit {
   id: string;
   clientId: string;
@@ -53,8 +55,9 @@ interface Credit {
   amount: number;
   currency: 'C$' | 'USD';
   interestRate: number;
-  term: number;
-  paymentFrequency: 'diario' | 'semanal' | 'quincenal' | 'mensual';
+  term: number; // Plazo en meses
+  paymentFrequency: PaymentFrequency;
+  numberOfInstallments: number; // Número de cuotas
   disbursementDate: Timestamp;
   firstPaymentDate: Timestamp;
   status: 'Activo' | 'Pendiente' | 'Pagado' | 'Vencido';
@@ -98,7 +101,7 @@ const CreditTable = ({ credits, statusFilter }: { credits: Credit[], statusFilte
               <TableHead>Cliente</TableHead>
               <TableHead>Monto</TableHead>
               <TableHead>Interés</TableHead>
-              <TableHead>Plazo</TableHead>
+              <TableHead>Nº Cuotas</TableHead>
               <TableHead>Desembolso</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>
@@ -119,7 +122,7 @@ const CreditTable = ({ credits, statusFilter }: { credits: Credit[], statusFilte
                 <TableCell>{credit.clientName}</TableCell>
                 <TableCell>{`${credit.currency} ${credit.amount.toLocaleString()}`}</TableCell>
                 <TableCell>{credit.interestRate}%</TableCell>
-                <TableCell>{credit.term}</TableCell>
+                <TableCell>{credit.numberOfInstallments}</TableCell>
                 <TableCell>{formatDate(credit.disbursementDate)}</TableCell>
                 <TableCell>
                   <Badge variant={getStatusVariant(credit.status)} className={getStatusClass(credit.status)}>
@@ -155,8 +158,13 @@ export default function CreditsPage() {
   const [credits, setCredits] = useState<Credit[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [openNewCredit, setOpenNewCredit] = useState(false);
+  
+  // Form states
   const [disbursementDate, setDisbursementDate] = useState('');
   const [firstPaymentDate, setFirstPaymentDate] = useState('');
+  const [term, setTerm] = useState(0);
+  const [paymentFrequency, setPaymentFrequency] = useState<PaymentFrequency>('mensual');
+  const [numberOfInstallments, setNumberOfInstallments] = useState(0);
 
   const { toast } = useToast();
 
@@ -204,19 +212,45 @@ export default function CreditsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (term > 0) {
+      switch (paymentFrequency) {
+        case 'mensual':
+          setNumberOfInstallments(term);
+          break;
+        case 'quincenal':
+          setNumberOfInstallments(term * 2);
+          break;
+        case 'semanal':
+          setNumberOfInstallments(term * 4);
+          break;
+        case 'diario':
+          setNumberOfInstallments(term * 30);
+          break;
+        default:
+          setNumberOfInstallments(0);
+      }
+    } else {
+      setNumberOfInstallments(0);
+    }
+  }, [term, paymentFrequency]);
+
+
   const handleDialogClose = (open: boolean) => {
     if (!open) {
       // Reset states when dialog closes
       setSelectedClient(null);
       setDisbursementDate('');
       setFirstPaymentDate('');
+      setTerm(0);
+      setPaymentFrequency('mensual');
     }
     setOpenNewCredit(open);
   }
   
   const handleNewCreditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedClient || !disbursementDate || !firstPaymentDate) {
+    if (!selectedClient || !disbursementDate || !firstPaymentDate || term <= 0) {
         toast({
             variant: "destructive",
             title: "Error de validación",
@@ -231,8 +265,9 @@ export default function CreditsPage() {
         amount: parseFloat(formData.get('amount') as string),
         currency: formData.get('currency') as 'C$' | 'USD',
         interestRate: parseFloat(formData.get('interest-rate') as string),
-        term: parseInt(formData.get('term') as string, 10),
-        paymentFrequency: formData.get('payment-frequency') as 'diario' | 'semanal' | 'quincenal' | 'mensual',
+        term: term,
+        paymentFrequency: paymentFrequency,
+        numberOfInstallments: numberOfInstallments,
         disbursementDate: Timestamp.fromDate(new Date(disbursementDate)),
         firstPaymentDate: Timestamp.fromDate(new Date(firstPaymentDate)),
         status: 'Activo',
@@ -364,23 +399,29 @@ export default function CreditsPage() {
                          </Select>
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="term">Plazo</Label>
-                          <Input id="term" name="term" type="number" required />
+                          <Label htmlFor="term">Plazo (Meses)</Label>
+                          <Input id="term" name="term" type="number" required onChange={(e) => setTerm(parseInt(e.target.value, 10) || 0)}/>
                       </div>
                   </div>
-                   <div className="space-y-2">
-                      <Label htmlFor="payment-frequency">Frecuencia de Pago</Label>
-                      <Select name="payment-frequency" defaultValue="mensual">
-                         <SelectTrigger id="payment-frequency">
-                           <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="diario">Diario</SelectItem>
-                           <SelectItem value="semanal">Semanal</SelectItem>
-                           <SelectItem value="quincenal">Quincenal</SelectItem>
-                           <SelectItem value="mensual">Mensual</SelectItem>
-                         </SelectContent>
-                      </Select>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                         <Label htmlFor="payment-frequency">Frecuencia de Pago</Label>
+                         <Select name="payment-frequency" value={paymentFrequency} onValueChange={(value) => setPaymentFrequency(value as PaymentFrequency)}>
+                            <SelectTrigger id="payment-frequency">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="diario">Diario</SelectItem>
+                              <SelectItem value="semanal">Semanal</SelectItem>
+                              <SelectItem value="quincenal">Quincenal</SelectItem>
+                              <SelectItem value="mensual">Mensual</SelectItem>
+                            </SelectContent>
+                         </Select>
+                      </div>
+                       <div className="space-y-2">
+                          <Label htmlFor="installments">Número de Cuotas</Label>
+                          <Input id="installments" name="installments" type="number" value={numberOfInstallments} readOnly className="bg-gray-100" />
+                      </div>
                   </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -415,3 +456,5 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
+
+    
