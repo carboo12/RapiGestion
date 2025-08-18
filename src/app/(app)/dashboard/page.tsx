@@ -76,7 +76,7 @@ export default function DashboardPage() {
         <h2 className="text-xl font-bold tracking-tight text-primary">Recuperacion</h2>
         <span className="text-sm text-primary">v {packageJson.version}</span>
       </div>
-      <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar pt-4">
+      <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar pt-4 pb-16">
         <Card className="border-primary border-2 rounded-2xl shadow-lg">
           <CardContent className="flex flex-col items-center text-center p-6 space-y-3">
             <Logo className="w-20 h-20 text-primary" />
