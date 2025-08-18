@@ -265,6 +265,18 @@ export default function CreditsPage() {
     }
   }
 
+  const interestRateOptions = () => {
+    const options = [];
+    for (let i = 1; i <= 10; i++) {
+        options.push(i);
+    }
+    options.push(10.44);
+    for (let i = 10.5; i <= 40; i += 0.5) {
+        options.push(i);
+    }
+    return options;
+  };
+
   return (
     <Dialog open={openNewCredit} onOpenChange={handleDialogClose}>
       <div className="space-y-4">
@@ -340,7 +352,18 @@ export default function CreditsPage() {
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                          <Label htmlFor="interest-rate">Tasa de Interés (%)</Label>
-                         <Input id="interest-rate" name="interest-rate" type="number" step="0.1" required />
+                         <Select name="interest-rate" required>
+                           <SelectTrigger id="interest-rate">
+                             <SelectValue placeholder="Selecciona una tasa..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {interestRateOptions().map(rate => (
+                               <SelectItem key={rate} value={String(rate)}>
+                                 {rate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
                       </div>
                       <div className="space-y-2">
                           <Label htmlFor="term">Plazo (Meses)</Label>
@@ -428,5 +451,3 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
-
-    
