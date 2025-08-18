@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from "@/components/ui/button"
 import {
@@ -210,7 +211,7 @@ export default function ClientsPage() {
   }
   
   const handleClientClick = (client: Client) => {
-    // router.push(`/clients/${client.id}`);
+    router.push(`/clients/${client.id}`);
   };
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

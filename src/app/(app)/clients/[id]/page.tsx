@@ -1,18 +1,19 @@
+
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp, onSnapshot, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, collection, query, where, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, Handshake, ShieldCheck, List, PlusCircle, User, Phone, Home, BadgePercent, Building, FileText, MapPin } from 'lucide-react';
+import { ArrowLeft, PlusCircle, CreditCard, ShieldCheck, Monitor, UserPlus } from 'lucide-react';
 import Loading from '@/app/loading';
-import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
 
 interface Client {
   id: string;
@@ -41,7 +42,7 @@ interface Guarantee {
     createdAt: Timestamp;
 }
 
-export default function ClientExpedientePage() {
+export default function ClientDetailPage() {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeCreditsCount, setActiveCreditsCount] = useState(0);
@@ -64,7 +65,6 @@ export default function ClientExpedientePage() {
 
       const fetchClientData = async () => {
         setLoading(true);
-        // Fetch client details
         const clientDoc = doc(db, 'clients', id);
         const clientSnap = await getDoc(clientDoc);
 
@@ -79,7 +79,6 @@ export default function ClientExpedientePage() {
       
       fetchClientData();
 
-      // Listen for Credits
       const creditsQuery = query(collection(db, "credits"), where("clientId", "==", id));
       const unsubscribeCredits = onSnapshot(creditsQuery, (snapshot) => {
         let activeCount = 0;
@@ -93,14 +92,12 @@ export default function ClientExpedientePage() {
         setPaidCreditsCount(paidCount);
       });
       
-      // Listen for References
       const referencesQuery = query(collection(db, "references"), where("clientId", "==", id));
       const unsubscribeReferences = onSnapshot(referencesQuery, (snapshot) => {
           const refsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Reference));
           setReferences(refsList);
       });
 
-      // Listen for Guarantees
       const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", id));
       const unsubscribeGuarantees = onSnapshot(guaranteesQuery, (snapshot) => {
           const guaranteesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Guarantee));
@@ -161,13 +158,31 @@ export default function ClientExpedientePage() {
     }
   }
 
-  if (loading) {
-    return <Loading />;
+  const handleNewCredit = () => {
+    if (references.length === 0) {
+      toast({ variant: 'destructive', title: 'Validación Fallida', description: 'El cliente debe tener al menos una referencia.' });
+      return;
+    }
+    if (guarantees.length === 0) {
+      toast({ variant: 'destructive', title: 'Validación Fallida', description: 'El cliente debe tener al menos una garantía.' });
+      return;
+    }
+    
+    const clientForCredit = {
+        id: client?.id,
+        name: fullName,
+        hasGuarantees: guarantees.length > 0,
+        hasReferences: references.length > 0,
+    };
+    localStorage.setItem('clientForCredit', JSON.stringify(clientForCredit));
+    router.push('/credits');
   }
-
+  
+  if (loading) return <Loading />;
+  
   if (!client) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center">
+      <div className="flex flex-col items-center justify-center h-full text-center p-4">
         <h2 className="text-2xl font-bold">Cliente no encontrado</h2>
         <p className="text-muted-foreground">El cliente que buscas no existe o fue eliminado.</p>
         <Button onClick={() => router.back()} className="mt-4">
@@ -183,150 +198,135 @@ export default function ClientExpedientePage() {
     .toUpperCase();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-          <span className="sr-only">Volver</span>
+    <div className="flex flex-col h-full bg-gray-50 pb-20">
+       <header className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-10">
+        <Button variant="ghost" size="icon" onClick={() => router.push('/clients')}>
+          <ArrowLeft className="h-6 w-6 text-green-600" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Expediente del Cliente</h1>
-          <p className="text-muted-foreground">Gestiona las garantías, referencias y créditos del cliente.</p>
-        </div>
-      </div>
+        <h1 className="text-lg font-bold text-green-600">Detalle de Cliente</h1>
+        <span className="text-xs text-muted-foreground w-10">v 10.1.1</span>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-primary">{fullName}</CardTitle>
-          <div className="flex items-center gap-4 text-sm pt-2">
-            <span className="font-semibold text-green-600">Créditos Activos: {activeCreditsCount}</span>
-            <span className="text-muted-foreground">Ciclos: {paidCreditsCount}</span>
-          </div>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Dialog open={isRefDialogOpen} onOpenChange={setIsRefDialogOpen}>
-            <DialogTrigger asChild>
-               <Button variant="outline" className="w-full justify-start h-12">
-                <Handshake className="mr-3 h-5 w-5 text-primary" />
-                <span>Agregar Referencia</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Agregar Nueva Referencia</DialogTitle>
-                <DialogDescription>Completa los datos de la persona que servirá como referencia.</DialogDescription>
-              </DialogHeader>
-              <form id="ref-form" onSubmit={handleReferenceSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="ref-name">Nombre Completo</Label>
-                  <Input id="ref-name" name="ref-name" required />
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        <Card className="rounded-2xl border-2 border-green-500 shadow-lg">
+            <CardContent className="p-4 space-y-3">
+                <div className='text-center'>
+                    <span className="text-sm text-gray-500">Cliente:</span>
+                    <p className="font-bold text-blue-600">{fullName}</p>
                 </div>
-                 <div>
-                  <Label htmlFor="ref-phone">Teléfono</Label>
-                  <Input id="ref-phone" name="ref-phone" required />
+                <div className="flex justify-around text-center">
+                    <div>
+                        <p className="font-bold text-green-600">{activeCreditsCount}</p>
+                        <p className="text-sm text-gray-500">Créditos Activos</p>
+                    </div>
+                     <div>
+                        <p className="font-bold text-yellow-600">{paidCreditsCount}</p>
+                        <p className="text-sm text-gray-500">Ciclos</p>
+                    </div>
                 </div>
-                 <div>
-                  <Label htmlFor="ref-address">Dirección</Label>
-                  <Input id="ref-address" name="ref-address" required />
+                <div className="space-y-2 pt-2">
+                    <Dialog open={isGuaranteeDialogOpen} onOpenChange={setIsGuaranteeDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="w-full rounded-full border-green-500 border-2 text-green-600 h-12">
+                                <ShieldCheck className="mr-2 h-5 w-5"/>
+                                Agregar Garantía
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Agregar Nueva Garantía</DialogTitle>
+                                <DialogDescription>Describe el objeto que respaldará el crédito.</DialogDescription>
+                            </DialogHeader>
+                             <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
+                                <div>
+                                    <Label htmlFor="guarantee-type">Tipo de Garantía</Label>
+                                    <Input id="guarantee-type" name="guarantee-type" placeholder="Ej: Televisor, Motocicleta" required />
+                                </div>
+                                <div>
+                                    <Label htmlFor="guarantee-value">Valor Estimado (C$)</Label>
+                                    <Input id="guarantee-value" name="guarantee-value" type="number" required />
+                                </div>
+                                <div>
+                                    <Label htmlFor="guarantee-details">Detalles u Observaciones</Label>
+                                    <Textarea id="guarantee-details" name="guarantee-details" placeholder="Ej: TV Samsung 42 pulgadas, Modelo X" required />
+                                </div>
+                            </form>
+                             <DialogFooter>
+                                <Button variant="ghost" onClick={() => setIsGuaranteeDialogOpen(false)}>Cancelar</Button>
+                                <Button type="submit" form="guarantee-form">Guardar Garantía</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                     <Button onClick={handleNewCredit} className="w-full rounded-full border-green-500 border-2 bg-green-500 hover:bg-green-600 h-12">
+                        <CreditCard className="mr-2 h-5 w-5"/>
+                        Agregar Crédito
+                    </Button>
                 </div>
-                 <div>
-                  <Label htmlFor="ref-relationship">Parentesco</Label>
-                  <Input id="ref-relationship" name="ref-relationship" required />
-                </div>
-              </form>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setIsRefDialogOpen(false)}>Cancelar</Button>
-                <Button type="submit" form="ref-form">Guardar Referencia</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isGuaranteeDialogOpen} onOpenChange={setIsGuaranteeDialogOpen}>
-             <DialogTrigger asChild>
-               <Button variant="outline" className="w-full justify-start h-12">
-                <ShieldCheck className="mr-3 h-5 w-5 text-primary" />
-                <span>Agregar Garantía</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Agregar Nueva Garantía</DialogTitle>
-                <DialogDescription>Describe el objeto que respaldará el crédito.</DialogDescription>
-              </DialogHeader>
-              <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
-                 <div>
-                  <Label htmlFor="guarantee-type">Tipo de Garantía</Label>
-                  <Input id="guarantee-type" name="guarantee-type" placeholder="Ej: Televisor, Motocicleta, Terreno" required />
-                </div>
-                 <div>
-                  <Label htmlFor="guarantee-value">Valor Estimado (C$)</Label>
-                  <Input id="guarantee-value" name="guarantee-value" type="number" required />
-                </div>
-                <div>
-                  <Label htmlFor="guarantee-details">Detalles u Observaciones</Label>
-                  <Textarea id="guarantee-details" name="guarantee-details" placeholder="Ej: TV Samsung 42 pulgadas, Modelo X, en buen estado." required />
-                </div>
-              </form>
-               <DialogFooter>
-                <Button variant="ghost" onClick={() => setIsGuaranteeDialogOpen(false)}>Cancelar</Button>
-                <Button type="submit" form="guarantee-form">Guardar Garantía</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-        </CardContent>
-      </Card>
-      
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-            <CardHeader>
-                <CardTitle>Referencias</CardTitle>
-                <CardDescription>Personas que dan fe del cliente.</CardDescription>
-            </CardHeader>
-            <CardContent>
-               {references.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                      <p>No hay referencias que mostrar.</p>
-                  </div>
-               ) : (
-                <ul className="space-y-4">
-                  {references.map(ref => (
-                    <li key={ref.id} className="p-4 border rounded-lg space-y-2">
-                       <p className="font-semibold text-primary">{ref.name}</p>
-                       <p className="text-sm flex items-center gap-2"><Phone className="h-4 w-4"/> {ref.phone}</p>
-                       <p className="text-sm flex items-center gap-2"><Home className="h-4 w-4"/> {ref.address}</p>
-                       <p className="text-sm flex items-center gap-2"><User className="h-4 w-4"/> {ref.relationship}</p>
-                    </li>
-                  ))}
-                </ul>
-               )}
             </CardContent>
         </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Garantías</CardTitle>
-                <CardDescription>Objetos que respaldan los créditos.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {guarantees.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                        <p>No hay garantías que mostrar.</p>
+
+        <h3 className="text-center font-bold text-blue-600">Lista de Referencias</h3>
+
+        <Card className="rounded-2xl border-2 border-green-500">
+            <CardContent className="p-4">
+                {references.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
+                        <Image src="https://placehold.co/128x128.png" data-ai-hint="empty state illustration" alt="No hay nada que mostrar" width={128} height={128} />
+                        <p className="mt-4 font-semibold">No hay nada que mostrar</p>
                     </div>
                 ) : (
-                  <ul className="space-y-4">
-                    {guarantees.map(guarantee => (
-                        <li key={guarantee.id} className="p-4 border rounded-lg space-y-2">
-                            <p className="font-semibold text-primary">{guarantee.type}</p>
-                            <p className="text-sm font-bold text-green-600">Valor: C$ {guarantee.value}</p>
-                            <p className="text-sm text-muted-foreground">{guarantee.details}</p>
-                        </li>
-                    ))}
-                  </ul>
+                    <ul className="space-y-3">
+                        {references.map(ref => (
+                            <li key={ref.id} className="p-3 border rounded-lg">
+                                <p className="font-semibold text-primary">{ref.name}</p>
+                                <p className="text-sm text-muted-foreground">{ref.phone}</p>
+                                <p className="text-sm text-muted-foreground">{ref.address}</p>
+                                <p className="text-sm text-muted-foreground">Parentesco: {ref.relationship}</p>
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </CardContent>
         </Card>
-      </div>
+      </main>
 
+       <Dialog open={isRefDialogOpen} onOpenChange={setIsRefDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
+              <UserPlus className="h-7 w-7" />
+              <span className="text-xs mt-1">Referencia</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Agregar Nueva Referencia</DialogTitle>
+              <DialogDescription>Completa los datos de la persona que servirá como referencia.</DialogDescription>
+            </DialogHeader>
+            <form id="ref-form" onSubmit={handleReferenceSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="ref-name">Nombre Completo</Label>
+                <Input id="ref-name" name="ref-name" required />
+              </div>
+              <div>
+                <Label htmlFor="ref-phone">Teléfono</Label>
+                <Input id="ref-phone" name="ref-phone" required />
+              </div>
+              <div>
+                <Label htmlFor="ref-address">Dirección</Label>
+                <Input id="ref-address" name="ref-address" required />
+              </div>
+              <div>
+                <Label htmlFor="ref-relationship">Parentesco</Label>
+                <Input id="ref-relationship" name="ref-relationship" required />
+              </div>
+            </form>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsRefDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit" form="ref-form">Guardar Referencia</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
+
