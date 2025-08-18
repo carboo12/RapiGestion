@@ -48,40 +48,46 @@ export default function AssignRoutePage() {
     
     const fetchData = async () => {
       setLoading(true);
-      // Fetch collectors
-      const usersRef = collection(db, "users");
-      const qCollectors = query(usersRef, where("role", "==", "Gestor de Cobros"));
-      const collectorSnapshot = await getDocs(qCollectors);
-      const collectorList = collectorSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-      setCollectors(collectorList);
+      try {
+        // Fetch collectors
+        const usersRef = collection(db, "users");
+        const qCollectors = query(usersRef, where("role", "==", "Gestor de Cobros"));
+        const collectorSnapshot = await getDocs(qCollectors);
+        const collectorList = collectorSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+        setCollectors(collectorList);
 
-      // Fetch pending credits and associated clients
-      const creditsRef = collection(db, 'credits');
-      const qCredits = query(creditsRef, where("status", "in", ["Activo", "Vencido"]));
-      const creditSnapshot = await getDocs(qCredits);
+        // Fetch pending credits and associated clients
+        const creditsRef = collection(db, 'credits');
+        const qCredits = query(creditsRef, where("status", "in", ["Activo", "Vencido"]));
+        const creditSnapshot = await getDocs(qCredits);
 
-      const clientsRef = collection(db, 'clients');
-      const clientSnapshot = await getDocs(clientsRef);
-      const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const clientsRef = collection(db, 'clients');
+        const clientSnapshot = await getDocs(clientsRef);
+        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const creditList = creditSnapshot.docs.map(doc => {
-          const data = doc.data();
-          const client = clientList.find(c => c.id === data.clientId);
-          return {
-              id: doc.id,
-              clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-              clientId: data.clientId,
-              clientAddress: client ? client.direccion : 'Dirección no disponible',
-              amountToPay: data.balance, // Or calculate installment
-          } as Credit;
-      });
-      
-      setPendingCredits(creditList);
-      setLoading(false);
+        const creditList = creditSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const client = clientList.find(c => c.id === data.clientId);
+            return {
+                id: doc.id,
+                clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
+                clientId: data.clientId,
+                clientAddress: client ? client.direccion : 'Dirección no disponible',
+                amountToPay: data.balance,
+            } as Credit;
+        });
+        
+        setPendingCredits(creditList);
+      } catch (error) {
+        console.error("Error fetching data for route assignment:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron cargar los datos necesarios.' });
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
-  }, []);
+  }, [toast]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {

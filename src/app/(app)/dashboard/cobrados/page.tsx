@@ -27,24 +27,29 @@ export default function CobradosPage() {
     setLoading(true);
 
     const unsubscribe = onSnapshot(paymentsRef, async (paymentSnapshot) => {
-        const clientsCol = collection(db, 'clients');
-        const clientSnapshot = await getDocs(clientsCol);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        try {
+            const clientsCol = collection(db, 'clients');
+            const clientSnapshot = await getDocs(clientsCol);
+            const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        const paymentList = paymentSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const client = clientList.find(c => c.id === data.clientId);
-            return {
-                id: doc.id,
-                creditId: data.creditId,
-                clientId: data.clientId,
-                clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-                amount: data.amount,
-            } as Payment;
-        });
+            const paymentList = paymentSnapshot.docs.map(doc => {
+                const data = doc.data();
+                const client = clientList.find(c => c.id === data.clientId);
+                return {
+                    id: doc.id,
+                    creditId: data.creditId,
+                    clientId: data.clientId,
+                    clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
+                    amount: data.amount,
+                } as Payment;
+            });
 
-        setPayments(paymentList);
-        setLoading(false);
+            setPayments(paymentList);
+        } catch (error) {
+            console.error("Error processing snapshot:", error);
+        } finally {
+            setLoading(false);
+        }
     }, (error) => {
         console.error("Error fetching payments:", error);
         setLoading(false);

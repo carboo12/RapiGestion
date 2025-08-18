@@ -62,6 +62,7 @@ export default function NoCobradosPage() {
     setLoading(true);
 
     const unsubscribe = onSnapshot(q, async (creditSnapshot) => {
+      try {
         const clientsCol = collection(db, 'clients');
         const clientSnapshot = await getDocs(clientsCol);
         const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -78,7 +79,11 @@ export default function NoCobradosPage() {
             } as PendingCredit;
         });
         setPendingCredits(creditList);
+      } catch(error) {
+        console.error("Error processing pending credits:", error);
+      } finally {
         setLoading(false);
+      }
     }, (error) => {
         console.error("Error fetching pending credits:", error);
         setLoading(false);
@@ -145,5 +150,3 @@ export default function NoCobradosPage() {
     </div>
   );
 }
-
-    

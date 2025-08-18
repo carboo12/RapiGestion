@@ -57,7 +57,6 @@ export default function RoutesPage() {
                 setUserRole(userData.role);
             }
         } else {
-            // Handle user not logged in
             setLoading(false);
         }
     });
@@ -96,24 +95,32 @@ export default function RoutesPage() {
     
     setLoading(true);
     const unsubscribeRoutes = onSnapshot(q, async (snapshot) => {
-      const usersRef = collection(db, 'users');
-      const usersSnapshot = await getDocs(usersRef);
-      const usersList = usersSnapshot.docs.map(d => ({id: d.id, ...d.data() as User}));
+      try {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+        const usersList = usersSnapshot.docs.map(d => ({id: d.id, ...d.data() as User}));
 
-      const routesList = snapshot.docs.map(d => {
-        const routeData = d.data();
-        const collector = usersList.find(u => u.id === routeData.collectorId);
-        return {
-          id: d.id,
-          collectorName: collector?.name || 'Desconocido',
-          collectorAvatar: collector?.name.split(' ').map(n => n[0]).join('') || '??',
-          progress: 0, // TODO: calculate progress
-          ...routeData
-        } as Route;
-      });
+        const routesList = snapshot.docs.map(d => {
+          const routeData = d.data();
+          const collector = usersList.find(u => u.id === routeData.collectorId);
+          return {
+            id: d.id,
+            collectorName: collector?.name || 'Desconocido',
+            collectorAvatar: collector?.name.split(' ').map(n => n[0]).join('') || '??',
+            progress: 0, // TODO: calculate progress
+            ...routeData
+          } as Route;
+        });
 
-      setRoutes(routesList);
-      setLoading(false);
+        setRoutes(routesList);
+      } catch (error) {
+        console.error("Error processing routes:", error);
+      } finally {
+        setLoading(false);
+      }
+    }, (error) => {
+        console.error("Error fetching routes:", error);
+        setLoading(false);
     });
 
     return () => unsubscribeRoutes();

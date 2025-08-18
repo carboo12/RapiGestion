@@ -80,6 +80,7 @@ export default function ClientsPage() {
     setLoading(true);
 
     const unsubscribe = onSnapshot(clientsCol, async (snapshot) => {
+      try {
         const clientListPromises = snapshot.docs.map(async (clientDoc) => {
             const clientData = clientDoc.data() as Omit<Client, 'id' | 'activeCreditsCount' | 'paidCreditsCount'>;
             
@@ -104,11 +105,14 @@ export default function ClientsPage() {
 
         const clientList = await Promise.all(clientListPromises);
         setClients(clientList);
+      } catch (error) {
+        console.error("Error processing clients snapshot:", error);
+      } finally {
         setLoading(false);
+      }
     }, (error) => {
         console.error("Error fetching clients:", error);
         setLoading(false);
-        // Silently fail and show an empty list.
     });
 
     return () => unsubscribe();
@@ -471,5 +475,3 @@ export default function ClientsPage() {
     </div>
   )
 }
-
-    
