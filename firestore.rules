@@ -1,10 +1,15 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid == userId;
+      allow delete: if false; 
+    }
+    match /users/{userId}/notifications/{notificationId} {
+        allow read, write: if request.auth.uid == userId;
     }
     match /clients/{clientId} {
       allow read, write: if request.auth != null;
@@ -18,14 +23,15 @@ service cloud.firestore {
     match /guarantees/{guaranteeId} {
       allow read, write: if request.auth != null;
     }
-    match /routes/{routeId} {
+     match /routes/{routeId} {
       allow read, write: if request.auth != null;
     }
     match /payments/{paymentId} {
-        allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
-    match /users/{userId}/notifications/{notificationId} {
-      allow read, write: if request.auth.uid == userId;
+    match /settings/{settingId} {
+      allow read: if request.auth != null;
+      allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrador';
     }
   }
 }
