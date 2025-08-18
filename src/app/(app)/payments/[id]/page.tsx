@@ -26,19 +26,24 @@ interface Client {
     segundoApellido?: string;
 }
 
-// Dummy data for now
-const companyInfo = {
-    name: 'RapiGestion',
-    slogan: 'Tu Credito Facil y Rapido',
-    ruc: 'J0310000012345',
-    phone: '8888-8888',
-};
+interface CompanySettings {
+    companyName: string;
+    slogan?: string;
+    ruc: string;
+    phone: string;
+    address: string;
+    defaultCurrency: string;
+    exchangeRate: number;
+}
 
+
+// Dummy data for now
 const gestorName = 'HENRY YASMIR CONTRERAS ZUNIGA'; // Dummy gestor
 
 export default function ReceiptPage() {
   const [payment, setPayment] = useState<Payment | null>(null);
   const [client, setClient] = useState<Client | null>(null);
+  const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
   
   const params = useParams();
@@ -48,9 +53,16 @@ export default function ReceiptPage() {
   useEffect(() => {
     if (id) {
       const db = getFirestore(app);
-      const fetchPaymentData = async () => {
+      const fetchReceiptData = async () => {
         setLoading(true);
         try {
+            // Fetch company settings
+            const settingsDocRef = doc(db, 'settings', 'general');
+            const settingsSnap = await getDoc(settingsDocRef);
+            if(settingsSnap.exists()) {
+                setCompanySettings(settingsSnap.data() as CompanySettings);
+            }
+
             const paymentDocRef = doc(db, 'payments', id);
             const paymentSnap = await getDoc(paymentDocRef);
 
@@ -77,7 +89,7 @@ export default function ReceiptPage() {
         }
       };
       
-      fetchPaymentData();
+      fetchReceiptData();
     }
   }, [id]);
 
@@ -139,10 +151,10 @@ export default function ReceiptPage() {
         <main className="flex-1 p-4 space-y-4 pb-24">
             <div className="bg-white p-6 rounded-lg shadow-md font-sans">
                 <div className="text-center mb-4">
-                    <h2 className="text-xl font-bold text-blue-600">{companyInfo.name}</h2>
-                    <p className="text-sm">{companyInfo.slogan}</p>
-                    <p className="text-sm">RUC: {companyInfo.ruc}</p>
-                    <p className="text-sm">Telefono: {companyInfo.phone}</p>
+                    <h2 className="text-xl font-bold text-blue-600">{companySettings?.companyName || 'RapiGestion'}</h2>
+                    {companySettings?.slogan && <p className="text-sm">{companySettings.slogan}</p>}
+                    <p className="text-sm">RUC: {companySettings?.ruc || 'No definido'}</p>
+                    <p className="text-sm">Telefono: {companySettings?.phone || 'No definido'}</p>
                     <p className="text-sm">Cobro del Dia #: 1</p>
                 </div>
 
@@ -213,4 +225,3 @@ export default function ReceiptPage() {
     </div>
   );
 }
-
