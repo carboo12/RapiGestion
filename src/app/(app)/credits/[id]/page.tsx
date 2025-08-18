@@ -65,7 +65,6 @@ export default function CreditDetailPage() {
   const [loading, setLoading] = useState(true);
   
   const [isGuaranteeDialogOpen, setIsGuaranteeDialogOpen] = useState(false);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   
   const params = useParams();
   const router = useRouter();
@@ -151,6 +150,10 @@ export default function CreditDetailPage() {
     if (amount === undefined) return 'C$ 0.00';
     return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
+
+  const handleGoToPayment = () => {
+    router.push(`/credits/${id}/payment`);
+  }
   
   if (loading) return <Loading />;
   
@@ -235,30 +238,10 @@ export default function CreditDetailPage() {
                   </div>
                   
                   <div className="pt-2">
-                      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-                          <DialogTrigger asChild>
-                              <Button variant="outline" className="w-full rounded-full border-green-500 border-2 text-green-600 h-12 text-lg font-bold">
-                                  <DollarSign className="mr-2 h-6 w-6"/>
-                                  Agregar Abono
-                              </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                              <DialogHeader>
-                                  <DialogTitle>Registrar Abono</DialogTitle>
-                                  <DialogDescription>Ingresa el monto que el cliente va a abonar al crédito.</DialogDescription>
-                              </DialogHeader>
-                              <form id="payment-form" className="space-y-4">
-                                  <div>
-                                      <Label htmlFor="payment-amount">Monto del Abono (C$)</Label>
-                                      <Input id="payment-amount" name="payment-amount" type="number" step="0.01" required />
-                                  </div>
-                              </form>
-                              <DialogFooter>
-                                  <Button variant="ghost" onClick={() => setIsPaymentDialogOpen(false)}>Cancelar</Button>
-                                  <Button type="submit" form="payment-form">Guardar Abono</Button>
-                              </DialogFooter>
-                          </DialogContent>
-                      </Dialog>
+                      <Button onClick={handleGoToPayment} variant="outline" className="w-full rounded-full border-green-500 border-2 text-green-600 h-12 text-lg font-bold">
+                          <DollarSign className="mr-2 h-6 w-6"/>
+                          Agregar Abono
+                      </Button>
                   </div>
               </CardContent>
           </Card>
