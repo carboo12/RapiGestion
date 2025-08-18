@@ -4,18 +4,7 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import {
   Tabs,
   TabsContent,
@@ -23,15 +12,13 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, MoreHorizontal, PlusCircle } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { AlertCircle, PlusCircle, CreditCard, ChevronRight } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { getFirestore, collection, getDocs, doc, getDoc, addDoc, serverTimestamp, query, where, Timestamp } from "firebase/firestore"
+import { getFirestore, collection, addDoc, serverTimestamp, Timestamp, onSnapshot } from "firebase/firestore"
 import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -60,14 +47,13 @@ interface Credit {
   numberOfInstallments: number; // Número de cuotas
   disbursementDate: Timestamp;
   firstPaymentDate: Timestamp;
-  status: 'Activo' | 'Pendiente' | 'Pagado' | 'Vencido';
+  status: 'Activo' | 'Pagado' | 'Vencido';
 }
 
 const getStatusVariant = (status: string) => {
   switch (status) {
     case 'Activo': return 'default';
     case 'Vencido': return 'destructive';
-    case 'Pendiente': return 'secondary';
     case 'Pagado': return 'outline';
     default: return 'default';
   }
@@ -78,81 +64,61 @@ const getStatusClass = (status: string) => {
     case 'Activo': return 'bg-blue-100 text-blue-800';
     case 'Vencido': return 'bg-red-100 text-red-800';
     case 'Pagado': return 'bg-green-100 text-green-800';
-    case 'Pendiente': return 'bg-yellow-100 text-yellow-800';
     default: return '';
   }
 }
 
-const CreditTable = ({ credits, statusFilter }: { credits: Credit[], statusFilter?: string }) => {
-  const filteredCredits = statusFilter ? credits.filter(c => c.status === statusFilter) : credits;
+const CreditItem = ({ credit }: { credit: Credit }) => {
+    const formatDate = (timestamp: Timestamp) => {
+        if (!timestamp) return 'N/A';
+        return format(timestamp.toDate(), "P", { locale: es });
+    }
 
-  const formatDate = (timestamp: Timestamp) => {
-    if (!timestamp) return 'N/A';
-    return format(timestamp.toDate(), "P", { locale: es });
-  }
+    return (
+        <li className="list-none">
+            <button className="w-full flex items-center p-3 bg-card rounded-lg border-2 border-primary/50 cursor-pointer hover:bg-accent transition-colors text-left">
+                <div className="flex-shrink-0 h-11 w-11 rounded-full bg-primary flex items-center justify-center mr-4">
+                    <CreditCard className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{credit.clientName}</p>
+                    <div className="text-xs text-muted-foreground mt-1">
+                        <span>Monto: <span className="font-semibold text-blue-600">{`${credit.currency} ${credit.amount.toLocaleString()}`}</span></span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                        <Badge variant={getStatusVariant(credit.status)} className={getStatusClass(credit.status)}>
+                            {credit.status}
+                        </Badge>
+                         <span className="text-muted-foreground">{formatDate(credit.disbursementDate)}</span>
+                    </div>
+                </div>
+                <ChevronRight className="h-6 w-6 text-primary ml-2" />
+            </button>
+        </li>
+    );
+};
+
+const CreditList = ({ credits, statusFilter }: { credits: Credit[], statusFilter?: string }) => {
+  const filteredCredits = statusFilter ? credits.filter(c => c.status === statusFilter) : credits;
 
   return (
     <Card>
       <CardContent className="pt-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID de Crédito</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Monto</TableHead>
-              <TableHead>Interés</TableHead>
-              <TableHead>Nº Cuotas</TableHead>
-              <TableHead>Desembolso</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>
-                <span className="sr-only">Acciones</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCredits.length === 0 ? (
-                <TableRow>
-                    <TableCell colSpan={8} className="text-center h-24">
-                        No hay créditos en esta categoría.
-                    </TableCell>
-                </TableRow>
-            ) : filteredCredits.map((credit) => (
-              <TableRow key={credit.id}>
-                <TableCell className="font-medium">{credit.id.substring(0,8).toUpperCase()}</TableCell>
-                <TableCell>{credit.clientName}</TableCell>
-                <TableCell>{`${credit.currency} ${credit.amount.toLocaleString()}`}</TableCell>
-                <TableCell>{credit.interestRate}%</TableCell>
-                <TableCell>{credit.numberOfInstallments}</TableCell>
-                <TableCell>{formatDate(credit.disbursementDate)}</TableCell>
-                <TableCell>
-                  <Badge variant={getStatusVariant(credit.status)} className={getStatusClass(credit.status)}>
-                    {credit.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                      <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
-                      <DropdownMenuItem>Registrar Pago</DropdownMenuItem>
-                      <DropdownMenuItem>Imprimir Recibo de Pago</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+        {filteredCredits.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <p>No hay créditos en esta categoría.</p>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {filteredCredits.map((credit) => (
+              <CreditItem key={credit.id} credit={credit} />
             ))}
-          </TableBody>
-        </Table>
+          </ul>
+        )}
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
 export default function CreditsPage() {
   const [credits, setCredits] = useState<Credit[]>([]);
@@ -168,41 +134,38 @@ export default function CreditsPage() {
 
   const { toast } = useToast();
 
-  const fetchCredits = async () => {
+  useEffect(() => {
     const db = getFirestore(app);
-    try {
-      // Fetch clients to map names
-      const clientsCol = collection(db, 'clients');
-      const clientSnapshot = await getDocs(clientsCol);
-      const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const creditsCol = collection(db, 'credits');
 
-      // Fetch credits
-      const creditsCol = collection(db, 'credits');
-      const creditSnapshot = await getDocs(creditsCol);
-      const creditList = creditSnapshot.docs.map(doc => {
-          const data = doc.data();
-          const client = clientList.find(c => c.id === data.clientId);
-          return {
-              id: doc.id,
-              ...data,
-              clientName: client ? `${client.primerNombre} ${client.apellido}` : 'Cliente Desconocido',
-          } as Credit;
-      });
-      setCredits(creditList);
+    const unsubscribe = onSnapshot(creditsCol, async (creditSnapshot) => {
+        const clientsCol = collection(db, 'clients');
+        const clientSnapshot = await getDocs(clientsCol);
+        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudieron cargar los datos.",
-      });
-    }
-  };
+        const creditList = creditSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const client = clientList.find(c => c.id === data.clientId);
+            return {
+                id: doc.id,
+                ...data,
+                clientName: client ? `${client.primerNombre} ${client.apellido}` : 'Cliente Desconocido',
+            } as Credit;
+        });
+        setCredits(creditList);
+    }, (error) => {
+        console.error("Error fetching credits:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudieron cargar los créditos.",
+        });
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
   useEffect(() => {
-    fetchCredits();
-
     const clientForCreditJSON = localStorage.getItem('clientForCredit');
     if (clientForCreditJSON) {
         const clientData = JSON.parse(clientForCreditJSON);
@@ -238,7 +201,6 @@ export default function CreditsPage() {
 
   const handleDialogClose = (open: boolean) => {
     if (!open) {
-      // Reset states when dialog closes
       setSelectedClient(null);
       setDisbursementDate('');
       setFirstPaymentDate('');
@@ -287,7 +249,6 @@ export default function CreditsPage() {
         
         handleDialogClose(false);
         form.reset();
-        fetchCredits();
     } catch (error) {
         console.error("Error creating credit:", error);
         toast({
@@ -323,19 +284,19 @@ export default function CreditsPage() {
         </div>
 
         <Tabs defaultValue="active" className="space-y-4">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="active">Activos</TabsTrigger>
             <TabsTrigger value="paid">Pagados</TabsTrigger>
             <TabsTrigger value="overdue">Vencidos</TabsTrigger>
           </TabsList>
           <TabsContent value="active">
-            <CreditTable credits={credits} statusFilter="Activo" />
+            <CreditList credits={credits} statusFilter="Activo" />
           </TabsContent>
           <TabsContent value="paid">
-            <CreditTable credits={credits} statusFilter="Pagado" />
+            <CreditList credits={credits} statusFilter="Pagado" />
           </TabsContent>
           <TabsContent value="overdue">
-            <CreditTable credits={credits} statusFilter="Vencido" />
+            <CreditList credits={credits} statusFilter="Vencido" />
           </TabsContent>
         </Tabs>
       </div>
@@ -451,3 +412,5 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
+
+    
