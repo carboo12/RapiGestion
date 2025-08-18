@@ -19,7 +19,7 @@ import { getFirestore, collection, getDocs, addDoc, doc, setDoc, query, where, o
 import { getAuth } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { Plus, User, MapPin, ChevronRight, Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Plus, User, MapPin, ChevronRight, Search, SlidersHorizontal, Loader2, UserPlus } from "lucide-react";
 
 interface Client {
   id: string;
@@ -355,10 +355,10 @@ export default function ClientsPage() {
 
       <Button
         onClick={() => handleOpenDialog(null)}
-        className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white"
+        className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
       >
-        <Plus className="h-8 w-8" />
-        <span className="sr-only">Agregar Cliente</span>
+        <UserPlus className="h-7 w-7" />
+        <span className="text-xs mt-1">Cliente</span>
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -471,5 +471,3 @@ export default function ClientsPage() {
     </div>
   )
 }
-
-    
