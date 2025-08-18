@@ -119,7 +119,7 @@ const CreditTable = ({ credits, statusFilter }: { credits: Credit[], statusFilte
                 <TableCell>{credit.clientName}</TableCell>
                 <TableCell>{`${credit.currency} ${credit.amount.toLocaleString()}`}</TableCell>
                 <TableCell>{credit.interestRate}%</TableCell>
-                <TableCell>{credit.term} Meses</TableCell>
+                <TableCell>{credit.term}</TableCell>
                 <TableCell>{formatDate(credit.disbursementDate)}</TableCell>
                 <TableCell>
                   <Badge variant={getStatusVariant(credit.status)} className={getStatusClass(credit.status)}>
@@ -262,15 +262,18 @@ export default function CreditsPage() {
   }
 
   const interestRateOptions = () => {
-    const options = [];
+    const options: number[] = [];
     for (let i = 1; i <= 10; i++) {
         options.push(i);
     }
     options.push(10.44);
+    
     for (let i = 10.5; i <= 40; i += 0.5) {
-        options.push(i);
+        if (i === 11 || i === 12 || i > 12) {
+            options.push(i)
+        }
     }
-    return options;
+    return options.sort((a,b) => a-b);
   };
 
   return (
@@ -362,7 +365,7 @@ export default function CreditsPage() {
                          </Select>
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="term">Plazo (Meses)</Label>
+                          <Label htmlFor="term">Plazo</Label>
                           <Input id="term" name="term" type="number" required />
                       </div>
                   </div>
@@ -413,3 +416,5 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
+
+    
