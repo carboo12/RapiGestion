@@ -24,6 +24,7 @@ interface Credit {
   id: string;
   clientId: string;
   balance: number;
+  status: 'Activo' | 'Pagado' | 'Vencido';
   // TODO: Add fields for installment amount, overdue days, etc.
 }
 
@@ -88,8 +89,8 @@ export default function PaymentPage() {
     }
   }, [paymentAmount, credit]);
 
-  const formatCurrency = (amount: number | null) => {
-    if (amount === null) return 'C$ 0.00';
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) return 'C$ 0.00';
     return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   
