@@ -12,6 +12,7 @@ import { app } from "@/lib/firebase";
 interface Payment {
   id: string;
   creditId: string;
+  clientId: string;
   clientName: string;
   amount: number;
 }
@@ -36,6 +37,7 @@ export default function CobradosPage() {
             return {
                 id: doc.id,
                 creditId: data.creditId,
+                clientId: data.clientId,
                 clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
                 amount: data.amount,
             } as Payment;
@@ -105,5 +107,3 @@ export default function CobradosPage() {
     </div>
   );
 }
-
-    

@@ -3,69 +3,53 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper functions
-    function isSignedIn() {
+
+    function isUserAuthenticated() {
       return request.auth != null;
     }
 
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-    
-    function isAdministrator() {
-        return isSignedIn() && getUserData(request.auth.uid).role == 'Administrador';
+    function isUserAdmin() {
+      return isUserAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Administrador';
     }
 
-    function isOwner(userId) {
-        return request.auth.uid == userId;
-    }
+    // Example rule: Only authenticated users can read or write to any document.
+    // match /{document=**} {
+    //   allow read, write: if isUserAuthenticated();
+    // }
 
-    // Rules for collections
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isAdministrator() || isOwner(userId);
+      allow read: if isUserAuthenticated();
+      allow create: if isUserAuthenticated(); // Allow user creation via client SDK
+      allow write: if request.auth.uid == userId || isUserAdmin();
     }
     
+    match /users/{userId}/notifications/{notificationId} {
+        allow read, write: if request.auth.uid == userId;
+    }
+
     match /clients/{clientId} {
-      allow read: if isSignedIn();
-      // Allow writes only by admins or collection managers
-      allow write: if isSignedIn() && (getUserData(request.auth.uid).role == 'Administrador' || getUserData(request.auth.uid).role == 'Gestor de Cobros');
+      allow read, write: if isUserAuthenticated();
     }
     
     match /credits/{creditId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn(); // More specific rules can be added later
+      allow read, write: if isUserAuthenticated();
     }
-    
-    match /references/{refId} {
-      allow read, write: if isSignedIn();
+
+    match /references/{referenceId} {
+        allow read, write: if isUserAuthenticated();
     }
-    
+
     match /guarantees/{guaranteeId} {
-      allow read, write: if isSignedIn();
+        allow read, write: if isUserAuthenticated();
+    }
+    
+    match /payments/{paymentId} {
+        allow read, write: if isUserAuthenticated();
     }
 
-    // Rules for Routes
     match /routes/{routeId} {
-      // Admins can manage all routes
-      allow create, update, delete: if isAdministrator();
-      
-      // Admins can read all routes. Others can only read their own routes.
-      allow read: if isAdministrator() || (isSignedIn() && resource.data.collectorId == request.auth.uid);
+        allow read, write: if isUserAuthenticated();
     }
 
-    // Rules for Notifications
-    match /users/{userId}/notifications/{notificationId} {
-      // Users can only manage their own notifications
-      allow read, write: if isOwner(userId);
-    }
-
-    // Default deny all other access
-    match /{document=**} {
-      allow read, write: if false;
-    }
   }
 }
-
-    
