@@ -36,12 +36,8 @@ import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { cn } from "@/lib/utils"
-import { Calendar } from "@/components/ui/calendar"
 
 interface Client {
   id: string;
@@ -159,8 +155,8 @@ export default function CreditsPage() {
   const [credits, setCredits] = useState<Credit[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [openNewCredit, setOpenNewCredit] = useState(false);
-  const [disbursementDate, setDisbursementDate] = useState<Date | undefined>();
-  const [firstPaymentDate, setFirstPaymentDate] = useState<Date | undefined>();
+  const [disbursementDate, setDisbursementDate] = useState<string | undefined>();
+  const [firstPaymentDate, setFirstPaymentDate] = useState<string | undefined>();
 
   const { toast } = useToast();
 
@@ -237,8 +233,8 @@ export default function CreditsPage() {
         interestRate: parseFloat(formData.get('interest-rate') as string),
         term: parseInt(formData.get('term') as string, 10),
         paymentFrequency: formData.get('payment-frequency') as 'diario' | 'semanal' | 'quincenal' | 'mensual',
-        disbursementDate: Timestamp.fromDate(disbursementDate),
-        firstPaymentDate: Timestamp.fromDate(firstPaymentDate),
+        disbursementDate: Timestamp.fromDate(new Date(disbursementDate)),
+        firstPaymentDate: Timestamp.fromDate(new Date(firstPaymentDate)),
         status: 'Activo',
         createdAt: serverTimestamp()
     };
@@ -387,53 +383,21 @@ export default function CreditsPage() {
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                          <Label>Fecha de Desembolso</Label>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !disbursementDate && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {disbursementDate ? format(disbursementDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                </Button>
-                            </PopoverTrigger>
-                             <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                mode="single"
-                                selected={disbursementDate}
-                                onSelect={setDisbursementDate}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                         </Popover>
+                         <Input
+                           type="date"
+                           value={disbursementDate}
+                           onChange={(e) => setDisbursementDate(e.target.value)}
+                           required
+                         />
                       </div>
                       <div className="space-y-2">
                           <Label>Fecha de Primer Pago</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !firstPaymentDate && "text-muted-foreground"
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {firstPaymentDate ? format(firstPaymentDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                mode="single"
-                                selected={firstPaymentDate}
-                                onSelect={setFirstPaymentDate}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                          </Popover>
+                          <Input
+                           type="date"
+                           value={firstPaymentDate}
+                           onChange={(e) => setFirstPaymentDate(e.target.value)}
+                           required
+                         />
                       </div>
                   </div>
               </form>
