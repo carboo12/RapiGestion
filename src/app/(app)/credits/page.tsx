@@ -250,6 +250,8 @@ export default function CreditsPage() {
   
   const handleNewCreditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+
     if (!selectedClient || !disbursementDate || !firstPaymentDate || term <= 0) {
         toast({
             variant: "destructive",
@@ -259,7 +261,7 @@ export default function CreditsPage() {
         return;
     }
 
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
     const newCreditData = {
         clientId: selectedClient.id,
         amount: parseFloat(formData.get('amount') as string),
@@ -284,7 +286,7 @@ export default function CreditsPage() {
         });
         
         handleDialogClose(false);
-        e.currentTarget.reset();
+        form.reset();
         fetchCredits();
     } catch (error) {
         console.error("Error creating credit:", error);
@@ -353,7 +355,7 @@ export default function CreditsPage() {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto -mx-6 px-6 no-scrollbar">
+        <div className="flex-1 overflow-y-auto no-scrollbar -mx-6 px-6">
           {selectedClient && (
               <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4 py-4">
                   <Alert>
@@ -456,5 +458,3 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
-
-    
