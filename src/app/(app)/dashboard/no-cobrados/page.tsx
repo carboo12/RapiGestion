@@ -107,7 +107,7 @@ export default function NoCobradosPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar">
         {loading ? (
             <div className="flex justify-center items-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -145,3 +145,5 @@ export default function NoCobradosPage() {
     </div>
   );
 }
+
+    

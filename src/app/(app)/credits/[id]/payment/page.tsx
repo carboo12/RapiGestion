@@ -2,7 +2,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, getFirestore, Timestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, Timestamp, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -96,7 +96,7 @@ export default function PaymentPage() {
   
   const handleApplyPayment = async () => {
     const amount = parseFloat(paymentAmount);
-    if (!credit || isNaN(amount) || amount <= 0) {
+    if (!credit || !client || isNaN(amount) || amount <= 0) {
         toast({ variant: 'destructive', title: 'Error', description: 'Por favor, ingrese un monto válido.' });
         return;
     }
@@ -116,7 +116,14 @@ export default function PaymentPage() {
             status: updatedStatus,
         });
 
-        // TODO: Record the payment in a 'payments' collection
+        // Record the payment in a 'payments' collection
+        await addDoc(collection(db, 'payments'), {
+          creditId: credit.id,
+          clientId: credit.clientId,
+          amount: amount,
+          paymentDate: serverTimestamp(),
+        });
+
 
         toast({ title: 'Éxito', description: 'El abono ha sido aplicado correctamente.' });
         router.push(`/credits/${credit.id}`);
@@ -204,3 +211,5 @@ export default function PaymentPage() {
     </div>
   );
 }
+
+    
