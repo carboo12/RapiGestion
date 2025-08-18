@@ -38,27 +38,79 @@ const CreditItem = ({ credit, onClick }: { credit: Credit, onClick: (creditId: s
         }
     }
 
-    // A simple logic to determine if the due date should be red
-    const isOverdue = credit.firstPaymentDate && new Date(credit.firstPaymentDate.toDate()) < new Date() && credit.status !== 'Pagado';
+    const getStatusStyles = () => {
+        const isOverdue = credit.firstPaymentDate && new Date(credit.firstPaymentDate.toDate()) < new Date();
+        
+        switch (credit.status) {
+            case 'Pagado':
+                return {
+                    container: 'border-green-500 hover:bg-green-50',
+                    iconContainer: 'bg-green-500',
+                    arrowContainer: 'border-green-500',
+                    arrowIcon: 'text-green-500',
+                    dateClass: 'text-green-600',
+                    statusText: 'Pagado'
+                };
+            case 'Vencido':
+                return {
+                    container: 'border-red-500 hover:bg-red-50',
+                    iconContainer: 'bg-red-500',
+                    arrowContainer: 'border-red-500',
+                    arrowIcon: 'text-red-500',
+                    dateClass: 'text-red-500',
+                    statusText: 'Vencido'
+                };
+            case 'Activo':
+                if (isOverdue) {
+                     return {
+                        container: 'border-yellow-500 hover:bg-yellow-50',
+                        iconContainer: 'bg-yellow-500',
+                        arrowContainer: 'border-yellow-500',
+                        arrowIcon: 'text-yellow-500',
+                        dateClass: 'text-yellow-600',
+                        statusText: 'Atrasado'
+                    };
+                }
+                return {
+                    container: 'border-sky-500 hover:bg-sky-50',
+                    iconContainer: 'bg-sky-500',
+                    arrowContainer: 'border-sky-500',
+                    arrowIcon: 'text-sky-500',
+                    dateClass: 'text-primary',
+                    statusText: 'Activo'
+                };
+            default:
+                return {
+                    container: 'border-gray-300 hover:bg-gray-50',
+                    iconContainer: 'bg-gray-400',
+                    arrowContainer: 'border-gray-300',
+                    arrowIcon: 'text-gray-400',
+                    dateClass: 'text-primary',
+                    statusText: 'Desconocido'
+                };
+        }
+    };
+    
+    const styles = getStatusStyles();
 
     return (
         <li className="list-none">
             <button 
               onClick={() => onClick(credit.id)}
-              className="w-full flex items-center p-3 bg-card rounded-lg border-2 border-green-400 cursor-pointer hover:bg-green-50 transition-colors text-left"
+              className={`w-full flex items-center p-3 bg-card rounded-lg border-2 cursor-pointer transition-colors text-left ${styles.container}`}
             >
-                <div className="flex-shrink-0 h-11 w-11 rounded-full bg-green-500 flex items-center justify-center mr-4">
+                <div className={`flex-shrink-0 h-11 w-11 rounded-full flex items-center justify-center mr-4 ${styles.iconContainer}`}>
                     <User className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm truncate uppercase">{credit.clientName}</p>
                     <div className="text-xs text-muted-foreground mt-1">
                         <span>Entregado: <span className="font-semibold text-green-600">{formatDate(credit.disbursementDate)}</span></span>
-                        <span className="ml-2">Vence: <span className={`font-semibold ${isOverdue ? 'text-red-500' : 'text-primary'}`}>{formatDate(credit.firstPaymentDate)}</span></span>
+                        <span className="ml-2">Vence: <span className={`font-semibold ${styles.dateClass}`}>{formatDate(credit.firstPaymentDate)}</span></span>
                     </div>
                 </div>
-                 <div className="flex items-center justify-center h-8 w-8 rounded-full border-2 border-green-500 ml-2">
-                    <ChevronRight className="h-5 w-5 text-green-500" />
+                 <div className={`flex items-center justify-center h-8 w-8 rounded-full border-2 ml-2 ${styles.arrowContainer}`}>
+                    <ChevronRight className={`h-5 w-5 ${styles.arrowIcon}`} />
                 </div>
             </button>
         </li>
