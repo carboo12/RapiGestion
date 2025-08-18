@@ -319,8 +319,30 @@ export default function CreditsPage() {
             {selectedClient ? `Rellena los detalles del crédito para ${selectedClient.name}.` : ''}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          
+
+        <Popover modal={true}>
+            <PopoverContent className="w-auto p-0">
+                <Calendar
+                mode="single"
+                selected={disbursementDate}
+                onSelect={setDisbursementDate}
+                initialFocus
+                />
+            </PopoverContent>
+        </Popover>
+
+        <Popover modal={true}>
+            <PopoverContent className="w-auto p-0">
+                <Calendar
+                mode="single"
+                selected={firstPaymentDate}
+                onSelect={setFirstPaymentDate}
+                initialFocus
+                />
+            </PopoverContent>
+        </Popover>
+        
+        <div className="flex-1 overflow-y-auto no-scrollbar -mx-6 px-6">
           {selectedClient && (
               <form id="new-credit-form" onSubmit={handleNewCreditSubmit} className="space-y-4 py-4">
                   <Alert>
@@ -387,53 +409,33 @@ export default function CreditsPage() {
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                          <Label>Fecha de Desembolso</Label>
-                         <Popover modal={true}>
-                          <PopoverTrigger asChild>
-                              <Button
-                              variant={"outline"}
-                              className={cn(
-                                  "w-full justify-start text-left font-normal",
-                                  !disbursementDate && "text-muted-foreground"
-                              )}
-                              >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {disbursementDate ? format(disbursementDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                              </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                              <Calendar
-                              mode="single"
-                              selected={disbursementDate}
-                              onSelect={setDisbursementDate}
-                              initialFocus
-                              />
-                          </PopoverContent>
-                          </Popover>
+                         <PopoverTrigger asChild>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !disbursementDate && "text-muted-foreground"
+                            )}
+                            >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {disbursementDate ? format(disbursementDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                            </Button>
+                         </PopoverTrigger>
                       </div>
                       <div className="space-y-2">
                           <Label>Fecha de Primer Pago</Label>
-                           <Popover modal={true}>
-                              <PopoverTrigger asChild>
-                                  <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                      "w-full justify-start text-left font-normal",
-                                      !firstPaymentDate && "text-muted-foreground"
-                                  )}
-                                  >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {firstPaymentDate ? format(firstPaymentDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                  </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                  mode="single"
-                                  selected={firstPaymentDate}
-                                  onSelect={setFirstPaymentDate}
-                                  initialFocus
-                                  />
-                              </PopoverContent>
-                          </Popover>
+                           <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !firstPaymentDate && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {firstPaymentDate ? format(firstPaymentDate, 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                </Button>
+                           </PopoverTrigger>
                       </div>
                   </div>
 
@@ -441,7 +443,7 @@ export default function CreditsPage() {
           )}
 
         </div>
-         <DialogFooter>
+         <DialogFooter className="mt-4">
               <Button type="button" variant="ghost" onClick={() => handleDialogClose(false)}>Cancelar</Button>
               {selectedClient && (
                   <Button type="submit" form="new-credit-form">Guardar Crédito</Button>
