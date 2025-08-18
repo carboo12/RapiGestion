@@ -18,7 +18,7 @@ import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { getFirestore, collection, addDoc, serverTimestamp, Timestamp, onSnapshot } from "firebase/firestore"
+import { getFirestore, collection, addDoc, serverTimestamp, Timestamp, onSnapshot, getDocs } from "firebase/firestore"
 import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -412,5 +412,3 @@ export default function CreditsPage() {
     </Dialog>
   )
 }
-
-    
