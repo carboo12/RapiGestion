@@ -120,14 +120,9 @@ export default function UsersPage() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h2>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Agregar Usuario
-            </Button>
-          </DialogTrigger>
         </div>
 
         <Card>
@@ -159,6 +154,15 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       </div>
+      
+      <DialogTrigger asChild>
+         <Button
+          className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+        >
+          <PlusCircle className="h-7 w-7" />
+          <span className="text-xs mt-1">Agregar</span>
+        </Button>
+      </DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
