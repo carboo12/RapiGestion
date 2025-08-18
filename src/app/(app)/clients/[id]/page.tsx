@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -277,7 +276,7 @@ export default function ClientDetailPage() {
                                   <DialogTitle>Agregar Nueva Garantía</DialogTitle>
                                   <DialogDescription>Describe el objeto que respaldará el crédito.</DialogDescription>
                               </DialogHeader>
-                              <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                              <div className="flex-1 overflow-y-auto -mx-6 px-6 no-scrollbar">
                                 <form id="guarantee-form" onSubmit={handleGuaranteeSubmit} className="space-y-4">
                                     <div>
                                         <Label htmlFor="guarantee-item">Artículo</Label>
