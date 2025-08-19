@@ -169,44 +169,36 @@ export default function ReceiptPage() {
     if (!input) return;
 
     try {
-        const canvas = await html2canvas(input, {
-            scale: 3,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff'
-        });
-        const imgData = canvas.toDataURL('image/png');
-        
-        const printerWidthMm = parseFloat(companySettings?.printerWidth || '58');
+        const canvas = await html2canvas(input, { scale: 3 });
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
-            format: [printerWidthMm, 297]
+            format: [companySettings?.printerWidth ? parseFloat(companySettings.printerWidth) : 58, 297]
         });
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
         const pdfBlob = pdf.output('blob');
 
         const clientFullName = [client?.primerNombre, client?.apellido].filter(Boolean).join(' ');
-        const fileName = `Recibo-${clientFullName.replace(/\s+/g, '-')}.pdf`;
+        const fileName = `Recibo-${clientFullName.replace(/\s+/g, '-') || 'pago'}.pdf`;
         
         const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
                 files: [file],
-                title: `Recibo de Abono - ${companySettings?.companyName}`,
+                title: `Recibo de Abono - ${companySettings?.companyName || 'RapiGestion'}`,
                 text: `Adjunto el recibo de abono para ${clientFullName}.`,
             });
         } else {
-            alert("Tu navegador no soporta compartir archivos.");
+            alert("Tu navegador no soporta la función de compartir archivos.");
         }
     } catch (error) {
-        console.error('Error sharing PDF:', error);
-        alert("Hubo un error al intentar compartir el recibo.");
+        console.error('Error al compartir el PDF:', error);
+        alert("Hubo un error al intentar compartir el recibo. Por favor, inténtalo de nuevo.");
     }
   };
 
@@ -261,7 +253,7 @@ export default function ReceiptPage() {
       
       fetchReceiptData();
     }
-  }, [id, client]);
+  }, [id]);
 
   const formatDate = (timestamp: Timestamp | null | undefined) => {
       if (!timestamp) return 'N/A';
@@ -335,7 +327,7 @@ export default function ReceiptPage() {
           </main>
         </div>
 
-        <div className="fixed bottom-20 right-4 z-50 flex gap-3">
+        <div className="fixed bottom-20 right-4 z-20 flex gap-3">
             <Button onClick={handlePrint} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
                 <Printer className="h-7 w-7" />
             </Button>
