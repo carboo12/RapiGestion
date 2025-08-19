@@ -53,8 +53,8 @@ export default function NewCreditPage() {
         }
     )),
     defaultValues: {
-      amount: '' as unknown as number,
-      numberOfInstallments: '' as unknown as number,
+      amount: undefined,
+      numberOfInstallments: undefined,
       disbursementDate: new Date().toISOString().split('T')[0],
       paymentFrequency: 'diario',
       interestRate: 10,
@@ -195,9 +195,19 @@ export default function NewCreditPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Tasa de Interés (%)</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" placeholder="Ej: 10" {...field} value={field.value ?? ''} />
-                                        </FormControl>
+                                        <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecciona una tasa" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="10">10%</SelectItem>
+                                                <SelectItem value="15">15%</SelectItem>
+                                                <SelectItem value="20">20%</SelectItem>
+                                                <SelectItem value="25">25%</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
