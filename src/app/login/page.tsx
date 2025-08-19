@@ -56,7 +56,7 @@ export default function LoginPage() {
           <div className="flex justify-center items-center mb-4">
             <Logo className="w-24 h-24" />
           </div>
-          <CardTitle className="text-2xl font-bold">RapiGestion</CardTitle>
+          <CardTitle className="text-2xl font-bold">RapiCredi</CardTitle>
           <CardDescription>
             Ingresa tu correo para iniciar sesión en tu cuenta
           </CardDescription>

@@ -1,6 +1,6 @@
 {
-  "name": "RapiGestion",
-  "short_name": "RapiGestion",
+  "name": "RapiCredi",
+  "short_name": "RapiCredi",
   "description": "Aplicación de gestión de créditos y cobros.",
   "start_url": "/",
   "display": "standalone",
