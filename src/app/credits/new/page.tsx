@@ -24,8 +24,9 @@ const creditSchema = z.object({
   interestRate: z.coerce.number().min(0, 'La tasa de interés no puede ser negativa'),
   paymentFrequency: z.enum(['diario', 'semanal', 'quincenal', 'mensual']),
   term: z.coerce.number().int().min(1, 'El plazo debe ser de al menos 1 mes'),
-  disbursementDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Fecha de desembolso inválida" }),
   destination: z.string().min(1, 'El destino del crédito es requerido'),
+  disbursementDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Fecha de desembolso inválida" }),
+  firstPaymentDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Fecha de primera cuota inválida" }),
 });
 
 type CreditFormData = z.infer<typeof creditSchema>;
@@ -39,7 +40,6 @@ interface SelectedClient {
 export default function NewCreditPage() {
   const [selectedClient, setSelectedClient] = useState<SelectedClient | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [firstPaymentDate, setFirstPaymentDate] = useState<Date | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -63,12 +63,12 @@ export default function NewCreditPage() {
       paymentFrequency: 'diario',
       interestRate: 10,
       destination: '',
+      firstPaymentDate: '',
     }
   });
 
   const disbursementDate = form.watch('disbursementDate');
   const paymentFrequency = form.watch('paymentFrequency');
-  const term = form.watch('term');
   
   useEffect(() => {
     const clientData = localStorage.getItem('selectedClient');
@@ -98,9 +98,9 @@ export default function NewCreditPage() {
             case 'quincenal': newFirstPaymentDate.setDate(newFirstPaymentDate.getDate() + 15); break;
             case 'mensual': newFirstPaymentDate.setMonth(newFirstPaymentDate.getMonth() + 1); break;
         }
-        setFirstPaymentDate(newFirstPaymentDate);
+        form.setValue('firstPaymentDate', newFirstPaymentDate.toISOString().split('T')[0]);
     }
-  }, [disbursementDate, paymentFrequency]);
+  }, [disbursementDate, paymentFrequency, form]);
 
   const getNumberOfInstallments = (term: number, frequency: 'diario' | 'semanal' | 'quincenal' | 'mensual'): number => {
       const months = term;
@@ -114,8 +114,8 @@ export default function NewCreditPage() {
   }
   
   const onSubmit = async (data: CreditFormData) => {
-    if (!selectedClient || !firstPaymentDate) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Cliente no encontrado o fecha de primer pago no calculada.' });
+    if (!selectedClient) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Cliente no encontrado.' });
       return;
     }
 
@@ -131,6 +131,7 @@ export default function NewCreditPage() {
     try {
         const db = getFirestore(app);
         const disbursementDateObj = new Date(data.disbursementDate);
+        const firstPaymentDateObj = new Date(data.firstPaymentDate);
         
         const numberOfInstallments = getNumberOfInstallments(data.term, data.paymentFrequency);
         const totalInterest = data.amount * (data.interestRate / 100);
@@ -151,7 +152,7 @@ export default function NewCreditPage() {
           paymentFrequency: data.paymentFrequency,
           numberOfInstallments: numberOfInstallments,
           disbursementDate: Timestamp.fromDate(disbursementDateObj),
-          firstPaymentDate: Timestamp.fromDate(firstPaymentDate),
+          firstPaymentDate: Timestamp.fromDate(firstPaymentDateObj),
           status: 'Activo',
           totalToPay: parseFloat(totalToPay.toFixed(2)),
           balance: parseFloat(totalToPay.toFixed(2)),
@@ -292,7 +293,7 @@ export default function NewCreditPage() {
                                     </FormItem>
                                 )}
                             />
-                             <FormField
+                            <FormField
                                 control={form.control}
                                 name="destination"
                                 render={({ field }) => (
@@ -318,15 +319,19 @@ export default function NewCreditPage() {
                                     </FormItem>
                                 )}
                             />
-                             <div>
-                                <Label>Fecha de Primera Cuota</Label>
-                                <Input 
-                                    type="text" 
-                                    readOnly 
-                                    value={firstPaymentDate ? format(firstPaymentDate, 'dd / MMMM / yyyy', { locale: es }) : 'Calculando...'}
-                                    className="mt-2 bg-gray-100"
-                                />
-                            </div>
+                            <FormField
+                                control={form.control}
+                                name="firstPaymentDate"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Fecha de Primera Cuota</FormLabel>
+                                        <FormControl>
+                                            <Input type="date" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                              <Button type="submit" disabled={isSubmitting} className="w-full h-12 rounded-full bg-green-500 hover:bg-green-600 text-lg font-bold">
                                 {isSubmitting ? (
                                     <Loader2 className="mr-2 h-6 w-6 animate-spin" />
