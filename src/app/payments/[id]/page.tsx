@@ -137,9 +137,9 @@ export default function ReceiptPage() {
     if (input) {
       try {
         const canvas = await html2canvas(input, {
-            scale: 3, // Higher scale for better quality
-            useCORS: true, // In case images are from external sources
-            logging: true, // To get more info in console if it fails
+            scale: 3,
+            useCORS: true,
+            logging: false,
             backgroundColor: '#ffffff'
         });
         
@@ -149,7 +149,7 @@ export default function ReceiptPage() {
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
-            format: [printerWidthMm, 297] // A long roll for thermal printers
+            format: [printerWidthMm, 297]
         });
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -288,7 +288,7 @@ export default function ReceiptPage() {
           </main>
         </div>
 
-        <div className="fixed bottom-4 right-4 z-50 flex gap-3">
+        <div className="fixed bottom-20 right-4 z-50 flex gap-3">
             <Button onClick={handlePrint} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
                 <Printer className="h-7 w-7" />
             </Button>
