@@ -53,8 +53,8 @@ export default function NewCreditPage() {
         }
     )),
     defaultValues: {
-      amount: undefined,
-      numberOfInstallments: undefined,
+      amount: 0,
+      numberOfInstallments: 1,
       disbursementDate: new Date().toISOString().split('T')[0],
       paymentFrequency: 'diario',
       interestRate: 10,
@@ -106,6 +106,7 @@ export default function NewCreditPage() {
 
         const totalInterest = data.amount * (data.interestRate / 100);
         const totalToPay = data.amount + totalInterest;
+        const installmentAmount = totalToPay / data.numberOfInstallments;
 
         const creditData = {
           clientId: selectedClient.id,
@@ -119,6 +120,7 @@ export default function NewCreditPage() {
           status: 'Activo',
           totalToPay: totalToPay,
           balance: totalToPay,
+          installmentAmount: installmentAmount,
           gestorId: gestor.email, 
           createdAt: serverTimestamp(),
         };
@@ -183,7 +185,7 @@ export default function NewCreditPage() {
                                     <FormItem>
                                         <FormLabel>Monto a Prestar (C$)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ej: 5000" {...field} value={field.value ?? ''} />
+                                            <Input type="number" placeholder="Ej: 5000" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -242,7 +244,7 @@ export default function NewCreditPage() {
                                     <FormItem>
                                         <FormLabel>Número de Cuotas</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ej: 30" {...field} value={field.value ?? ''} />
+                                            <Input type="number" placeholder="Ej: 30" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
