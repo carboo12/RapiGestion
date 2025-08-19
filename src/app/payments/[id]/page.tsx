@@ -135,27 +135,32 @@ export default function ReceiptPage() {
   const handlePrint = async () => {
     const input = componentRef.current;
     if (input) {
-        // We make the receipt temporarily visible at a larger scale for a better quality capture
-        input.style.width = '80mm'; 
-        
-        html2canvas(input, { scale: 3 }).then((canvas) => {
-            const imgData = canvas.toDataURL('image/png');
-            input.style.width = ''; // Reset style
-
-            const printerWidthMm = parseFloat(companySettings?.printerWidth || '58');
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: [printerWidthMm, 297] // A long roll
-            });
-
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.autoPrint();
-            pdf.output('dataurlnewwindow');
+      try {
+        const canvas = await html2canvas(input, {
+            scale: 3, // Higher scale for better quality
+            useCORS: true, // In case images are from external sources
+            logging: true, // To get more info in console if it fails
+            backgroundColor: '#ffffff'
         });
+        
+        const imgData = canvas.toDataURL('image/png');
+        
+        const printerWidthMm = parseFloat(companySettings?.printerWidth || '58');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: [printerWidthMm, 297] // A long roll for thermal printers
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+      } catch (error) {
+          console.error('Error generating PDF:', error);
+      }
     }
   };
 
