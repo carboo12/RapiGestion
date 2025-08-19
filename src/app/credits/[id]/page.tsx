@@ -281,12 +281,6 @@ export default function CreditDetailPage() {
       </div>
 
         <Dialog open={isGuaranteeDialogOpen} onOpenChange={setIsGuaranteeDialogOpen}>
-            <DialogTrigger asChild>
-                <Button className="fixed bottom-36 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
-                    <Plus className="h-7 w-7" />
-                    <span className="text-xs mt-1">Garantía</span>
-                </Button>
-            </DialogTrigger>
             <DialogContent className="max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Agregar Nueva Garantía</DialogTitle>
@@ -322,17 +316,6 @@ export default function CreditDetailPage() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-        
-        <div className="fixed bottom-20 right-4 space-y-2">
-            <Button className="h-16 w-16 rounded-full bg-green-500 hover:bg-green-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
-                <Printer className="h-7 w-7" />
-                <span className="text-xs mt-1">Imprimir</span>
-            </Button>
-             <Button className="h-16 w-16 rounded-full bg-sky-500 hover:bg-sky-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
-                <Share2 className="h-7 w-7" />
-                <span className="text-xs mt-1">Compartir</span>
-            </Button>
-        </div>
     </div>
   );
 }
