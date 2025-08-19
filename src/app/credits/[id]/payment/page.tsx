@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, getFirestore, Timestamp, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, Timestamp, updateDoc, collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import Loading from '@/app/loading';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import { getAuth } from 'firebase/auth';
 
 interface Client {
   id: string;
@@ -24,7 +25,10 @@ interface Credit {
   clientId: string;
   balance: number;
   status: 'Activo' | 'Pagado' | 'Vencido';
-  // TODO: Add fields for installment amount, overdue days, etc.
+  paymentFrequency: 'diario' | 'semanal' | 'quincenal' | 'mensual';
+  firstPaymentDate: Timestamp;
+  disbursementDate: Timestamp;
+  installmentAmount: number;
 }
 
 const ApplyPaymentIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -40,6 +44,8 @@ export default function PaymentPage() {
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [newBalance, setNewBalance] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [overdueDays, setOverdueDays] = useState(0);
+  const [overdueInstallments, setOverdueInstallments] = useState(0);
 
   const params = useParams();
   const router = useRouter();
@@ -88,15 +94,46 @@ export default function PaymentPage() {
     }
   }, [paymentAmount, credit]);
 
+  useEffect(() => {
+    if (credit) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let expectedPayments = 0;
+        let nextDueDate = credit.firstPaymentDate.toDate();
+
+        while (nextDueDate <= today) {
+            expectedPayments++;
+            switch (credit.paymentFrequency) {
+                case 'diario': nextDueDate.setDate(nextDueDate.getDate() + 1); break;
+                case 'semanal': nextDueDate.setDate(nextDueDate.getDate() + 7); break;
+                case 'quincenal': nextDueDate.setDate(nextDueDate.getDate() + 15); break;
+                case 'mensual': nextDueDate.setMonth(nextDueDate.getMonth() + 1); break;
+            }
+        }
+
+        const daysDiff = Math.floor((today.getTime() - credit.firstPaymentDate.toDate().getTime()) / (1000 * 3600 * 24));
+
+        setOverdueDays(daysDiff > 0 ? daysDiff : 0);
+        
+        // This is a simplification. A real implementation would need to track actual payments made.
+        setOverdueInstallments(expectedPayments > 0 ? expectedPayments - 1 : 0);
+    }
+  }, [credit]);
+
+
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === null || amount === undefined) return 'C$ 0.00';
     return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   
   const handleApplyPayment = async () => {
+    const auth = getAuth(app);
+    const gestor = auth.currentUser;
+
     const amount = parseFloat(paymentAmount);
-    if (!credit || !client || isNaN(amount) || amount <= 0) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Por favor, ingrese un monto válido.' });
+    if (!credit || !client || isNaN(amount) || amount <= 0 || !gestor) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Por favor, ingrese un monto válido o inicie sesión.' });
         return;
     }
     if (amount > credit.balance) {
@@ -115,13 +152,31 @@ export default function PaymentPage() {
             status: updatedStatus,
         });
 
-        // Record the payment in a 'payments' collection
-        await addDoc(collection(db, 'payments'), {
+        const paymentRef = await addDoc(collection(db, 'payments'), {
           creditId: credit.id,
           clientId: credit.clientId,
           amount: amount,
           paymentDate: serverTimestamp(),
+          gestorId: gestor.uid,
+          gestorName: gestor.displayName || gestor.email,
         });
+
+        // Notify Admins
+        const usersRef = collection(db, 'users');
+        const qAdmins = query(usersRef, where("role", "==", "Administrador"));
+        const adminSnapshot = await getDocs(qAdmins);
+        const clientFullName = `${client.primerNombre} ${client.apellido}`.trim();
+
+        for (const adminDoc of adminSnapshot.docs) {
+            const adminId = adminDoc.id;
+            await addDoc(collection(db, `users/${adminId}/notifications`), {
+                title: 'Nuevo Abono Registrado',
+                description: `El gestor ${gestor.email} registró un abono de ${formatCurrency(amount)} para ${clientFullName}.`,
+                link: `/payments/${paymentRef.id}`,
+                read: false,
+                createdAt: serverTimestamp()
+            });
+        }
 
 
         toast({ title: 'Éxito', description: 'El abono ha sido aplicado correctamente.' });
@@ -151,6 +206,9 @@ export default function PaymentPage() {
     .filter(Boolean)
     .join(' ')
     .toUpperCase();
+    
+  const amountToGetUpToDate = (overdueInstallments * credit.installmentAmount);
+
 
   return (
     <div className="flex flex-col h-full -m-4 md:-m-8">
@@ -169,8 +227,8 @@ export default function PaymentPage() {
                     <p className="font-bold text-blue-600">{clientFullName}</p>
                     <p className="text-sm text-gray-500">{client.direccion}</p>
                     <p className="text-sm mt-1">
-                        <span className="text-red-500">Días de atraso: 0</span>
-                        <span className="ml-2 text-red-500">Cuotas atrasadas: 0</span>
+                        <span className="text-red-500">Días de atraso: {overdueDays}</span>
+                        <span className="ml-2 text-red-500">Cuotas atrasadas: {overdueInstallments}</span>
                     </p>
                 </CardContent>
             </Card>
@@ -179,11 +237,11 @@ export default function PaymentPage() {
                 <CardContent className="p-6 space-y-4">
                     <div className="flex justify-between items-center">
                         <span className="font-medium">Cuota:</span>
-                        <span className="font-bold text-blue-600">{formatCurrency(0)}</span>
+                        <span className="font-bold text-blue-600">{formatCurrency(credit.installmentAmount)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="font-bold text-green-600">Ponerse al dia:</span>
-                        <span className="font-bold text-blue-600">{formatCurrency(0)}</span>
+                        <span className="font-bold text-blue-600">{formatCurrency(amountToGetUpToDate)}</span>
                     </div>
                     
                     <Input 
