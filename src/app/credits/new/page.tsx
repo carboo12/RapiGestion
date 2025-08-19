@@ -41,6 +41,8 @@ export default function NewCreditPage() {
   const form = useForm<CreditFormData>({
     resolver: zodResolver(creditSchema),
     defaultValues: {
+      amount: undefined, // Or 0, or ''
+      numberOfInstallments: undefined, // Or 0, or ''
       disbursementDate: new Date().toISOString().split('T')[0],
       paymentFrequency: 'diario',
       interestRate: 10,
@@ -157,7 +159,7 @@ export default function NewCreditPage() {
                                     <FormItem>
                                         <FormLabel>Monto a Prestar (C$)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ej: 5000" {...field} />
+                                            <Input type="number" placeholder="Ej: 5000" {...field} value={field.value ?? ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -170,7 +172,7 @@ export default function NewCreditPage() {
                                     <FormItem>
                                         <FormLabel>Tasa de Interés (%)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ej: 10" {...field} />
+                                            <Input type="number" placeholder="Ej: 10" {...field} value={field.value ?? ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -206,7 +208,7 @@ export default function NewCreditPage() {
                                     <FormItem>
                                         <FormLabel>Número de Cuotas</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ej: 30" {...field} />
+                                            <Input type="number" placeholder="Ej: 30" {...field} value={field.value ?? ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
