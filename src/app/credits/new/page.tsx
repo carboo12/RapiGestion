@@ -223,19 +223,6 @@ export default function NewCreditPage() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField
                                 control={form.control}
-                                name="destination"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Destino del Crédito</FormLabel>
-                                        <FormControl>
-                                            <Input type="text" placeholder="Ej: Compra de mercancía" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
                                 name="amount"
                                 render={({ field }) => (
                                     <FormItem>
@@ -300,6 +287,19 @@ export default function NewCreditPage() {
                                         <FormLabel>Plazo (meses)</FormLabel>
                                         <FormControl>
                                             <Input type="number" placeholder="Ej: 3" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="destination"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Destino del Crédito</FormLabel>
+                                        <FormControl>
+                                            <Input type="text" placeholder="Ej: Compra de mercancía" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
