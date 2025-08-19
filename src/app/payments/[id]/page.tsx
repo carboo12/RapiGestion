@@ -9,6 +9,9 @@ import Loading from '@/app/loading';
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Logo } from '@/components/logo';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 
 interface Payment {
   id: string;
@@ -55,7 +58,7 @@ const ReceiptContent = forwardRef<HTMLDivElement, any>(({ payment, client, credi
     const formattedReceiptNumber = payment.receiptNumber ? String(payment.receiptNumber).padStart(5, '0') : payment.id.substring(0, 5);
 
     return (
-        <div id="receipt-content" ref={ref} className="bg-white p-6 rounded-lg shadow-md font-sans text-black">
+        <div id="receipt-content" ref={ref} className="bg-white p-4 rounded-lg shadow-md font-sans text-black max-w-[302px] mx-auto">
             <div className="text-center mb-4">
                 <div className="flex justify-center items-center mb-2">
                     <Logo className="w-20 h-20 text-primary" />
@@ -129,43 +132,32 @@ export default function ReceiptPage() {
   const id = params.id as string;
   const componentRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = () => {
-    const node = componentRef.current;
-    if (node) {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-      
-      const pri = iframe.contentWindow;
-      if (pri) {
-        pri.document.open();
-        pri.document.write('<html><head><title>Recibo</title>');
-        // Potentially add styles here if needed, especially for ticket printing
-        pri.document.write('<style>');
-        pri.document.write(`
-            @media print {
-                @page { size: ${companySettings?.printerWidth || 'auto'}; margin: 0; }
-                body { margin: 10px; font-family: sans-serif; }
-            }
-        `);
-        pri.document.write('</style>');
-        pri.document.write('</head><body>');
-        pri.document.write(node.innerHTML);
-        pri.document.write('</body></html>');
-        pri.document.close();
+  const handlePrint = async () => {
+    const input = componentRef.current;
+    if (input) {
+        // We make the receipt temporarily visible at a larger scale for a better quality capture
+        input.style.width = '80mm'; 
         
-        pri.focus();
-        pri.print();
-        
-        // Clean up the iframe after printing
-        document.body.removeChild(iframe);
-      }
+        html2canvas(input, { scale: 3 }).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            input.style.width = ''; // Reset style
+
+            const printerWidthMm = parseFloat(companySettings?.printerWidth || '58');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [printerWidthMm, 297] // A long roll
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.autoPrint();
+            pdf.output('dataurlnewwindow');
+        });
     }
   };
-
 
   useEffect(() => {
     if (id) {
