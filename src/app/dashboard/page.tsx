@@ -104,7 +104,7 @@ export default function DashboardPage() {
       <div className="flex-1 overflow-y-auto space-y-4 no-scrollbar pt-4 pb-16">
         <Card className="border-primary border-2 rounded-2xl shadow-lg">
           <CardContent className="flex flex-col items-center text-center p-6 space-y-3">
-          <img src="/logo1.svg" alt="logo" />
+          <Logo className="w-24 h-24" />
             <h3 className="text-2xl font-bold text-primary">{userName || 'Cargando...'}</h3>
             <p className="text-muted-foreground">Que tengas un buen día!</p>
             <p className="text-sm text-muted-foreground">{currentDate || 'Cargando fecha...'}</p>
