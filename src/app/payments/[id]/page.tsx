@@ -9,7 +9,6 @@ import Loading from '@/app/loading';
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Logo } from '@/components/logo';
-import { useReactToPrint } from 'react-to-print';
 
 interface Payment {
   id: string;
@@ -17,6 +16,7 @@ interface Payment {
   creditId: string;
   amount: number;
   paymentDate: Timestamp;
+  receiptNumber?: number;
 }
 
 interface Credit {
@@ -46,32 +46,34 @@ interface CompanySettings {
 
 const gestorName = 'HENRY YASMIR CONTRERAS ZUNIGA'; 
 
-interface ReceiptContentProps {
-  payment: Payment;
-  client: Client;
-  credit: Credit;
-  companySettings: CompanySettings | null;
-  receiptDetails: {
-      cuotaDia: number;
-      montoAtrasado: number;
-      diasMora: number;
-      totalPagar: number;
-      montoCancelacion: number;
-      nuevoSaldo: number;
-      concepto: string;
-  };
-  formatDate: (timestamp: Timestamp | null | undefined) => string;
-  formatCurrency: (amount: number | null | undefined) => string;
-}
-
-const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(({ payment, client, credit, companySettings, receiptDetails, formatDate, formatCurrency }, ref) => {
+const ReceiptContent = forwardRef<HTMLDivElement, any>(({ payment, client, credit, companySettings, receiptDetails, formatDate, formatCurrency }, ref) => {
     const clientFullName = [client.primerNombre, client.segundoNombre, client.apellido, client.segundoApellido]
     .filter(Boolean)
     .join(' ')
     .toUpperCase();
     
+    const formattedReceiptNumber = payment.receiptNumber ? String(payment.receiptNumber).padStart(5, '0') : payment.id.substring(0, 5);
+
     return (
-        <div id="receipt-content" ref={ref} className="bg-white p-6 rounded-lg shadow-md font-sans">
+        <div id="receipt-content" ref={ref} className="bg-white p-6 rounded-lg shadow-md font-sans text-black">
+            <style>
+              {`
+                @media print {
+                  body * {
+                    visibility: hidden;
+                  }
+                  #receipt-to-print, #receipt-to-print * {
+                    visibility: visible;
+                  }
+                  #receipt-to-print {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                  }
+                }
+              `}
+            </style>
             <div className="text-center mb-4">
                 <div className="flex justify-center items-center mb-2">
                     <Logo className="w-20 h-20 text-primary" />
@@ -80,10 +82,10 @@ const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(({ paymen
                 {companySettings?.slogan && <p className="text-sm">{companySettings.slogan}</p>}
                 <p className="text-sm">RUC: {companySettings?.ruc || 'No definido'}</p>
                 <p className="text-sm">Telefono: {companySettings?.phone || 'No definido'}</p>
-                <p className="text-sm">Abono #: {payment.id.substring(0, 5)}</p>
+                <p className="text-sm">Abono #: {formattedReceiptNumber}</p>
             </div>
 
-            <div className="border-t border-b border-dashed py-2 mb-4 text-sm">
+            <div className="border-t border-b border-dashed border-gray-400 py-2 mb-4 text-sm">
                 <p>Transaccion: {payment.id.substring(0,5)}</p>
                 <p>Fecha/hora: {formatDate(payment.paymentDate)}</p>
                 <p className="font-bold">CLIENTE: {clientFullName}</p>
@@ -124,7 +126,7 @@ const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(({ paymen
                 </div>
             </div>
 
-            <div className="text-center mt-6 border-t pt-2">
+            <div className="text-center mt-6 border-t border-gray-400 pt-2">
                 <p className="text-sm font-bold text-blue-600">{gestorName}</p>
             </div>
         </div>
@@ -145,16 +147,20 @@ export default function ReceiptPage() {
   const id = params.id as string;
   const componentRef = useRef<HTMLDivElement>(null);
 
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-    pageStyle: companySettings?.printerWidth ? `
-      @page {
-        size: ${companySettings.printerWidth};
-        margin: 0;
-      }
-      body { -webkit-print-color-adjust: exact; }
-    ` : undefined
-  });
+  const handlePrint = () => {
+    const node = componentRef.current;
+    if (node) {
+        const receiptHtml = node.innerHTML;
+        const originalPageHtml = document.body.innerHTML;
+        
+        document.body.innerHTML = receiptHtml;
+        window.print();
+        document.body.innerHTML = originalPageHtml;
+        // We need to re-attach event listeners or simply reload
+        window.location.reload();
+    }
+  };
+
 
   useEffect(() => {
     if (id) {
@@ -265,16 +271,18 @@ export default function ReceiptPage() {
           </header>
 
           <main className="flex-1 p-4 space-y-4 pb-24">
-            <ReceiptContent 
-              ref={componentRef}
-              payment={payment}
-              client={client}
-              credit={credit}
-              companySettings={companySettings}
-              receiptDetails={receiptDetails}
-              formatDate={formatDate}
-              formatCurrency={formatCurrency}
-            />
+            <div id="receipt-to-print">
+               <ReceiptContent 
+                ref={componentRef}
+                payment={payment}
+                client={client}
+                credit={credit}
+                companySettings={companySettings}
+                receiptDetails={receiptDetails}
+                formatDate={formatDate}
+                formatCurrency={formatCurrency}
+              />
+            </div>
           </main>
         </div>
 
