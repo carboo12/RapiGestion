@@ -68,6 +68,7 @@ export default function NewCreditPage() {
 
   const disbursementDate = form.watch('disbursementDate');
   const paymentFrequency = form.watch('paymentFrequency');
+  const term = form.watch('term');
   
   useEffect(() => {
     const clientData = localStorage.getItem('selectedClient');
@@ -102,11 +103,12 @@ export default function NewCreditPage() {
   }, [disbursementDate, paymentFrequency]);
 
   const getNumberOfInstallments = (term: number, frequency: 'diario' | 'semanal' | 'quincenal' | 'mensual'): number => {
+      const months = term;
       switch (frequency) {
-          case 'diario': return term * 30;
-          case 'semanal': return term * 4;
-          case 'quincenal': return term * 2;
-          case 'mensual': return term;
+          case 'diario': return months * 30; // Assuming 30 days per month
+          case 'semanal': return months * 4; // Assuming 4 weeks per month
+          case 'quincenal': return months * 2;
+          case 'mensual': return months;
           default: return 0;
       }
   }
@@ -133,8 +135,13 @@ export default function NewCreditPage() {
         const numberOfInstallments = getNumberOfInstallments(data.term, data.paymentFrequency);
         const totalInterest = data.amount * (data.interestRate / 100);
         const totalToPay = data.amount + totalInterest;
-        const installmentAmount = totalToPay / numberOfInstallments;
 
+        // The user explained a different calculation for installmentAmount
+        // Amortization = (Monto a prestar / #cuotas) + interes por cuota
+        const capitalPerInstallment = data.amount / numberOfInstallments;
+        const interestPerInstallment = totalInterest / numberOfInstallments;
+        const installmentAmount = capitalPerInstallment + interestPerInstallment;
+        
         const creditData = {
           clientId: selectedClient.id,
           amount: data.amount,
@@ -146,9 +153,9 @@ export default function NewCreditPage() {
           disbursementDate: Timestamp.fromDate(disbursementDateObj),
           firstPaymentDate: Timestamp.fromDate(firstPaymentDate),
           status: 'Activo',
-          totalToPay: totalToPay,
-          balance: totalToPay,
-          installmentAmount: installmentAmount,
+          totalToPay: parseFloat(totalToPay.toFixed(2)),
+          balance: parseFloat(totalToPay.toFixed(2)),
+          installmentAmount: parseFloat(installmentAmount.toFixed(2)),
           destination: data.destination,
           gestorId: gestor.email, 
           createdAt: serverTimestamp(),
