@@ -37,6 +37,7 @@ interface Credit {
   totalToPay: number;
   balance: number;
   gestorId?: string;
+  destination?: string;
 }
 
 
@@ -201,6 +202,10 @@ export default function CreditDetailPage() {
                   <div className='text-center'>
                       <span className="text-sm text-gray-500">Gestor:</span>
                       <p className="font-bold text-blue-600">{credit.gestorId || 'No asignado'}</p>
+                  </div>
+                   <div className='text-center'>
+                      <span className="text-sm text-gray-500">Destino:</span>
+                      <p className="font-bold text-blue-600 uppercase">{credit.destination || 'No especificado'}</p>
                   </div>
                   
                   <div className="grid grid-cols-2 text-center text-sm">

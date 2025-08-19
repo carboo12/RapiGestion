@@ -16,13 +16,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ArrowLeft, Calculator, Loader2, Save, ShieldAlert } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const creditSchema = z.object({
   amount: z.coerce.number().min(1, 'El monto debe ser mayor a 0'),
   interestRate: z.coerce.number().min(0, 'La tasa de interés no puede ser negativa'),
   paymentFrequency: z.enum(['diario', 'semanal', 'quincenal', 'mensual']),
-  numberOfInstallments: z.coerce.number().int().min(1, 'Debe haber al menos una cuota'),
+  term: z.coerce.number().int().min(1, 'El plazo debe ser de al menos 1 mes'),
   disbursementDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Fecha de desembolso inválida" }),
+  destination: z.string().min(1, 'El destino del crédito es requerido'),
 });
 
 type CreditFormData = z.infer<typeof creditSchema>;
@@ -36,6 +39,7 @@ interface SelectedClient {
 export default function NewCreditPage() {
   const [selectedClient, setSelectedClient] = useState<SelectedClient | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [firstPaymentDate, setFirstPaymentDate] = useState<Date | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -54,12 +58,16 @@ export default function NewCreditPage() {
     )),
     defaultValues: {
       amount: 0,
-      numberOfInstallments: 1,
+      term: 1,
       disbursementDate: new Date().toISOString().split('T')[0],
       paymentFrequency: 'diario',
       interestRate: 10,
+      destination: '',
     }
   });
+
+  const disbursementDate = form.watch('disbursementDate');
+  const paymentFrequency = form.watch('paymentFrequency');
   
   useEffect(() => {
     const clientData = localStorage.getItem('selectedClient');
@@ -76,10 +84,36 @@ export default function NewCreditPage() {
       router.push('/clients');
     }
   }, [router, toast, form]);
+
+  useEffect(() => {
+    if (disbursementDate && paymentFrequency) {
+        const date = new Date(disbursementDate);
+        date.setUTCHours(0,0,0,0); // Normalize date
+        const newFirstPaymentDate = new Date(date);
+
+        switch (paymentFrequency) {
+            case 'diario': newFirstPaymentDate.setDate(newFirstPaymentDate.getDate() + 1); break;
+            case 'semanal': newFirstPaymentDate.setDate(newFirstPaymentDate.getDate() + 7); break;
+            case 'quincenal': newFirstPaymentDate.setDate(newFirstPaymentDate.getDate() + 15); break;
+            case 'mensual': newFirstPaymentDate.setMonth(newFirstPaymentDate.getMonth() + 1); break;
+        }
+        setFirstPaymentDate(newFirstPaymentDate);
+    }
+  }, [disbursementDate, paymentFrequency]);
+
+  const getNumberOfInstallments = (term: number, frequency: 'diario' | 'semanal' | 'quincenal' | 'mensual'): number => {
+      switch (frequency) {
+          case 'diario': return term * 30;
+          case 'semanal': return term * 4;
+          case 'quincenal': return term * 2;
+          case 'mensual': return term;
+          default: return 0;
+      }
+  }
   
   const onSubmit = async (data: CreditFormData) => {
-    if (!selectedClient) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Cliente no encontrado.' });
+    if (!selectedClient || !firstPaymentDate) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Cliente no encontrado o fecha de primer pago no calculada.' });
       return;
     }
 
@@ -94,33 +128,28 @@ export default function NewCreditPage() {
     
     try {
         const db = getFirestore(app);
-        const disbursementDate = new Date(data.disbursementDate);
+        const disbursementDateObj = new Date(data.disbursementDate);
         
-        const firstPaymentDate = new Date(disbursementDate);
-        switch (data.paymentFrequency) {
-            case 'diario': firstPaymentDate.setDate(firstPaymentDate.getDate() + 1); break;
-            case 'semanal': firstPaymentDate.setDate(firstPaymentDate.getDate() + 7); break;
-            case 'quincenal': firstPaymentDate.setDate(firstPaymentDate.getDate() + 15); break;
-            case 'mensual': firstPaymentDate.setMonth(firstPaymentDate.getMonth() + 1); break;
-        }
-
+        const numberOfInstallments = getNumberOfInstallments(data.term, data.paymentFrequency);
         const totalInterest = data.amount * (data.interestRate / 100);
         const totalToPay = data.amount + totalInterest;
-        const installmentAmount = totalToPay / data.numberOfInstallments;
+        const installmentAmount = totalToPay / numberOfInstallments;
 
         const creditData = {
           clientId: selectedClient.id,
           amount: data.amount,
           currency: 'C$',
           interestRate: data.interestRate,
+          term: data.term, // in months
           paymentFrequency: data.paymentFrequency,
-          numberOfInstallments: data.numberOfInstallments,
-          disbursementDate: Timestamp.fromDate(disbursementDate),
+          numberOfInstallments: numberOfInstallments,
+          disbursementDate: Timestamp.fromDate(disbursementDateObj),
           firstPaymentDate: Timestamp.fromDate(firstPaymentDate),
           status: 'Activo',
           totalToPay: totalToPay,
           balance: totalToPay,
           installmentAmount: installmentAmount,
+          destination: data.destination,
           gestorId: gestor.email, 
           createdAt: serverTimestamp(),
         };
@@ -187,6 +216,19 @@ export default function NewCreditPage() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField
                                 control={form.control}
+                                name="destination"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Destino del Crédito</FormLabel>
+                                        <FormControl>
+                                            <Input type="text" placeholder="Ej: Compra de mercancía" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
                                 name="amount"
                                 render={({ field }) => (
                                     <FormItem>
@@ -245,12 +287,12 @@ export default function NewCreditPage() {
                             />
                              <FormField
                                 control={form.control}
-                                name="numberOfInstallments"
+                                name="term"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Número de Cuotas</FormLabel>
+                                        <FormLabel>Plazo (meses)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="Ej: 30" {...field} />
+                                            <Input type="number" placeholder="Ej: 3" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -269,6 +311,15 @@ export default function NewCreditPage() {
                                     </FormItem>
                                 )}
                             />
+                             <div>
+                                <Label>Fecha de Primera Cuota</Label>
+                                <Input 
+                                    type="text" 
+                                    readOnly 
+                                    value={firstPaymentDate ? format(firstPaymentDate, 'dd / MMMM / yyyy', { locale: es }) : 'Calculando...'}
+                                    className="mt-2 bg-gray-100"
+                                />
+                            </div>
                              <Button type="submit" disabled={isSubmitting} className="w-full h-12 rounded-full bg-green-500 hover:bg-green-600 text-lg font-bold">
                                 {isSubmitting ? (
                                     <Loader2 className="mr-2 h-6 w-6 animate-spin" />
