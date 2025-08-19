@@ -17,6 +17,7 @@ interface Payment {
   creditId: string;
   amount: number;
   paymentDate: Timestamp;
+  receiptNumber?: number;
 }
 
 interface Credit {
@@ -62,16 +63,17 @@ interface ReceiptContentProps {
   };
   formatDate: (timestamp: Timestamp | null | undefined) => string;
   formatCurrency: (amount: number | null | undefined) => string;
+  formattedReceiptNumber: string;
 }
 
-const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(({ payment, client, credit, companySettings, receiptDetails, formatDate, formatCurrency }, ref) => {
+const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(({ payment, client, credit, companySettings, receiptDetails, formatDate, formatCurrency, formattedReceiptNumber }, ref) => {
     const clientFullName = [client.primerNombre, client.segundoNombre, client.apellido, client.segundoApellido]
     .filter(Boolean)
     .join(' ')
     .toUpperCase();
     
     return (
-        <div id="receipt-content" ref={ref} className="bg-white p-6 rounded-lg shadow-md font-sans">
+        <div id="receipt-content" ref={ref} className="bg-white p-6 rounded-lg shadow-md font-sans w-full">
             <div className="text-center mb-4">
                 <div className="flex justify-center items-center mb-2">
                     <Logo className="w-20 h-20 text-primary" />
@@ -80,7 +82,7 @@ const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(({ paymen
                 {companySettings?.slogan && <p className="text-sm">{companySettings.slogan}</p>}
                 <p className="text-sm">RUC: {companySettings?.ruc || 'No definido'}</p>
                 <p className="text-sm">Telefono: {companySettings?.phone || 'No definido'}</p>
-                <p className="text-sm">Abono #: {payment.id.substring(0, 5)}</p>
+                <p className="text-sm">Abono #: {formattedReceiptNumber}</p>
             </div>
 
             <div className="border-t border-b border-dashed py-2 mb-4 text-sm">
@@ -147,13 +149,17 @@ export default function ReceiptPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    pageStyle: companySettings?.printerWidth ? `
+    pageStyle: `@media print {
       @page {
-        size: ${companySettings.printerWidth};
+        size: ${companySettings?.printerWidth || '58mm'};
         margin: 0;
       }
-      body { -webkit-print-color-adjust: exact; }
-    ` : undefined
+      body {
+        -webkit-print-color-adjust: exact;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+      }
+    }`
   });
 
   useEffect(() => {
@@ -251,45 +257,51 @@ export default function ReceiptPage() {
       nuevoSaldo: credit.balance,
       concepto: 'ABONO DE CUOTA',
   };
+  
+  const formattedReceiptNumber = payment.receiptNumber?.toString().padStart(5, '0') || 'N/A';
 
   return (
-    <>
-      <div className="flex flex-col h-full -m-4 md:-m-8">
-        <div className="flex flex-col flex-1 bg-gray-50 overflow-y-auto no-scrollbar print:hidden">
-          <header className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-10">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="h-6 w-6 text-green-600" />
-            </Button>
-            <h1 className="text-lg font-bold text-green-600">Abono #: {payment.id.substring(0, 5)}</h1>
-            <span className="text-xs text-muted-foreground w-10">v 10.1.1</span>
-          </header>
+    <div className="flex flex-col h-full -m-4 md:-m-8">
+        <div className="flex flex-col flex-1 bg-gray-50 overflow-y-auto no-scrollbar">
+            <header className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-10 print:hidden">
+                <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft className="h-6 w-6 text-green-600" />
+                </Button>
+                <h1 className="text-lg font-bold text-green-600">Abono #: {payment.id.substring(0, 5).toUpperCase()}</h1>
+                <span className="text-xs text-muted-foreground w-10">v 10.1.1</span>
+            </header>
 
-          <main className="flex-1 p-4 space-y-4 pb-24">
-            <ReceiptContent 
-              ref={componentRef}
-              payment={payment}
-              client={client}
-              credit={credit}
-              companySettings={companySettings}
-              receiptDetails={receiptDetails}
-              formatDate={formatDate}
-              formatCurrency={formatCurrency}
-            />
-          </main>
+            <main className="flex-1 p-4 space-y-4 pb-24 print:p-0 print:flex print:justify-center print:items-start">
+                <div className="max-w-md mx-auto print:mx-0 print:shadow-none">
+                    <ReceiptContent 
+                        ref={componentRef}
+                        payment={payment}
+                        client={client}
+                        credit={credit}
+                        companySettings={companySettings}
+                        receiptDetails={receiptDetails}
+                        formatDate={formatDate}
+                        formatCurrency={formatCurrency}
+                        formattedReceiptNumber={formattedReceiptNumber}
+                    />
+                </div>
+            </main>
         </div>
 
-        <div className="fixed bottom-4 right-4 z-50 flex gap-3 print:hidden">
-            <Button onClick={handlePrint} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
-                <Printer className="h-7 w-7" />
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t print:hidden flex justify-around items-center">
+             <Button onClick={handlePrint} variant="outline" className="flex-1 flex items-center justify-center gap-2 text-primary border-primary">
+                <Printer className="h-5 w-5" />
+                Imprimir
             </Button>
-            <Button variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-blue-500 text-blue-500 bg-white shadow-lg">
-                <Share2 className="h-7 w-7" />
+             <Button variant="outline" className="flex-1 flex items-center justify-center gap-2 mx-2 text-blue-600 border-blue-600">
+                <Share2 className="h-5 w-5" />
+                Compartir
             </Button>
-            <Button onClick={handleAnotherPayment} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
-                <Wallet className="h-7 w-7" />
+            <Button onClick={handleAnotherPayment} variant="outline" className="flex-1 flex items-center justify-center gap-2 text-green-600 border-green-600">
+                <Wallet className="h-5 w-5" />
+                Otro Abono
             </Button>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
