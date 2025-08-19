@@ -48,6 +48,7 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeCreditsCount, setActiveCreditsCount] = useState(0);
   const [paidCreditsCount, setPaidCreditsCount] = useState(0);
+  const [totalGuaranteeValue, setTotalGuaranteeValue] = useState(0);
 
   const [references, setReferences] = useState<Reference[]>([]);
   const [guarantees, setGuarantees] = useState<Guarantee[]>([]);
@@ -104,10 +105,13 @@ export default function ClientDetailPage() {
       });
 
       const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", id));
-      const unsubscribeGuarantees = onSnapshot(guaranteesQuery, (snapshot) => {
-          const guaranteesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Guarantee));
-          setGuarantees(guaranteesList);
-      });
+        const unsubscribeGuarantees = onSnapshot(guaranteesQuery, (snapshot) => {
+            const guaranteesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Guarantee));
+            setGuarantees(guaranteesList);
+            
+            const totalValue = guaranteesList.reduce((sum, g) => sum + parseFloat(g.valorEstimado || '0'), 0);
+            setTotalGuaranteeValue(totalValue);
+        });
 
 
       return () => {
@@ -204,6 +208,7 @@ export default function ClientDetailPage() {
         const clientForCredit = {
             id: client.id,
             name: fullName,
+            totalGuaranteeValue: totalGuaranteeValue
         };
         localStorage.setItem('selectedClient', JSON.stringify(clientForCredit));
         router.push('/credits/new');
@@ -214,6 +219,10 @@ export default function ClientDetailPage() {
     setEditingReference(ref);
     setIsEditRefDialogOpen(true);
   };
+
+  const formatCurrency = (amount: number) => {
+    return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
   
   if (loading) return <Loading />;
   
@@ -260,6 +269,10 @@ export default function ClientDetailPage() {
                       <div>
                           <p className="font-bold text-yellow-600">{paidCreditsCount}</p>
                           <p className="text-sm text-gray-500">Ciclos</p>
+                      </div>
+                      <div>
+                          <p className="font-bold text-indigo-600">{formatCurrency(totalGuaranteeValue)}</p>
+                          <p className="text-sm text-gray-500">Valor Garantías</p>
                       </div>
                   </div>
                   <div className="space-y-2 pt-2">

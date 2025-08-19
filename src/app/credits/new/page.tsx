@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { ArrowLeft, Calculator, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Calculator, Loader2, Save, ShieldAlert } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 
 const creditSchema = z.object({
@@ -30,6 +30,7 @@ type CreditFormData = z.infer<typeof creditSchema>;
 interface SelectedClient {
     id: string;
     name: string;
+    totalGuaranteeValue: number;
 }
 
 export default function NewCreditPage() {
@@ -39,20 +40,33 @@ export default function NewCreditPage() {
   const { toast } = useToast();
 
   const form = useForm<CreditFormData>({
-    resolver: zodResolver(creditSchema),
+    resolver: zodResolver(creditSchema.refine(
+        (data) => {
+            if (selectedClient && selectedClient.totalGuaranteeValue) {
+                return data.amount <= selectedClient.totalGuaranteeValue;
+            }
+            return true;
+        },
+        {
+            message: 'El monto del crédito no puede exceder el valor total de la garantía.',
+            path: ['amount'],
+        }
+    )),
     defaultValues: {
-      amount: undefined, // Or 0, or ''
-      numberOfInstallments: undefined, // Or 0, or ''
+      amount: '' as unknown as number,
+      numberOfInstallments: '' as unknown as number,
       disbursementDate: new Date().toISOString().split('T')[0],
       paymentFrequency: 'diario',
       interestRate: 10,
     }
   });
-
+  
   useEffect(() => {
     const clientData = localStorage.getItem('selectedClient');
     if (clientData) {
-      setSelectedClient(JSON.parse(clientData));
+      const parsedClient = JSON.parse(clientData);
+      setSelectedClient(parsedClient);
+      form.trigger(); // Trigger validation after client is set
     } else {
       toast({
         variant: 'destructive',
@@ -61,7 +75,7 @@ export default function NewCreditPage() {
       });
       router.push('/clients');
     }
-  }, [router, toast]);
+  }, [router, toast, form]);
   
   const onSubmit = async (data: CreditFormData) => {
     if (!selectedClient) {
@@ -111,6 +125,7 @@ export default function NewCreditPage() {
 
         const docRef = await addDoc(collection(db, 'credits'), creditData);
         toast({ title: 'Éxito', description: 'Crédito creado correctamente.' });
+        localStorage.removeItem('selectedClient');
         router.push(`/credits/${docRef.id}`);
 
     } catch (error) {
@@ -120,6 +135,11 @@ export default function NewCreditPage() {
         setIsSubmitting(false);
     }
   };
+
+  const formatCurrency = (amount: number) => {
+    if (isNaN(amount)) return 'C$ 0.00';
+    return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
   
   if (!selectedClient) {
     return null; 
@@ -141,6 +161,10 @@ export default function NewCreditPage() {
                 <CardContent className="p-4 text-center">
                     <p className="text-sm text-gray-500">Cliente:</p>
                     <p className="font-bold text-blue-600 text-lg">{selectedClient.name}</p>
+                     <div className="mt-2 text-sm font-semibold text-indigo-600 flex items-center justify-center gap-2">
+                        <ShieldAlert className="h-5 w-5" />
+                        <span>Valor de Garantía: {formatCurrency(selectedClient.totalGuaranteeValue)}</span>
+                    </div>
                 </CardContent>
             </Card>
 
