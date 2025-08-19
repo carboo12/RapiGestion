@@ -107,6 +107,12 @@ export default function ReceiptPage() {
     return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   
+  const handleAnotherPayment = () => {
+    if(payment) {
+        router.push(`/credits/${payment.creditId}/payment`);
+    }
+  }
+
   if (loading) return <Loading />;
   
   if (!payment || !client) {
@@ -217,7 +223,7 @@ export default function ReceiptPage() {
               <Button variant="outline" className="h-14 w-24 flex-shrink-0 rounded-2xl border-2 border-blue-500 text-blue-600">
                   <Share2 className="h-8 w-8" />
               </Button>
-              <Button variant="outline" className="h-14 w-24 flex-shrink-0 rounded-2xl border-2 border-green-500 text-green-600">
+              <Button onClick={handleAnotherPayment} variant="outline" className="h-14 w-24 flex-shrink-0 rounded-2xl border-2 border-green-500 text-green-600">
                   <Wallet className="h-8 w-8" />
               </Button>
           </div>
@@ -225,5 +231,3 @@ export default function ReceiptPage() {
     </div>
   );
 }
-
-    
