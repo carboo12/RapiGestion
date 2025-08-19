@@ -231,18 +231,16 @@ export default function ReceiptPage() {
         </main>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white p-2 border-t shadow-lg-top md:hidden">
-          <div className="flex justify-around items-center">
-              <Button variant="outline" className="h-14 w-24 flex-shrink-0 rounded-2xl border-2 border-green-500 text-green-600">
-                  <Printer className="h-8 w-8" />
-              </Button>
-              <Button variant="outline" className="h-14 w-24 flex-shrink-0 rounded-2xl border-2 border-blue-500 text-blue-600">
-                  <Share2 className="h-8 w-8" />
-              </Button>
-              <Button onClick={handleAnotherPayment} variant="outline" className="h-14 w-24 flex-shrink-0 rounded-2xl border-2 border-green-500 text-green-600">
-                  <Wallet className="h-8 w-8" />
-              </Button>
-          </div>
+      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex gap-3">
+          <Button variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
+              <Printer className="h-7 w-7" />
+          </Button>
+          <Button variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-blue-500 text-blue-500 bg-white shadow-lg">
+              <Share2 className="h-7 w-7" />
+          </Button>
+          <Button onClick={handleAnotherPayment} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
+              <Wallet className="h-7 w-7" />
+          </Button>
       </div>
     </div>
   );
