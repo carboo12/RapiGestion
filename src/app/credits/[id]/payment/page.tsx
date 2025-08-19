@@ -180,7 +180,7 @@ export default function PaymentPage() {
 
 
         toast({ title: 'Éxito', description: 'El abono ha sido aplicado correctamente.' });
-        router.push(`/credits/${credit.id}`);
+        router.push(`/payments/${paymentRef.id}`);
     } catch (error) {
         console.error("Error applying payment:", error);
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo aplicar el abono.' });
@@ -268,3 +268,5 @@ export default function PaymentPage() {
     </div>
   );
 }
+
+    
