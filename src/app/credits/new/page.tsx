@@ -103,7 +103,7 @@ export default function NewCreditPage() {
           status: 'Activo',
           totalToPay: totalToPay,
           balance: totalToPay,
-          gestorId: gestor.uid, 
+          gestorId: gestor.email, 
           createdAt: serverTimestamp(),
         };
 

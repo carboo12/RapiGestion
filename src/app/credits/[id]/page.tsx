@@ -73,42 +73,46 @@ export default function CreditDetailPage() {
   useEffect(() => {
     if (id) {
       const db = getFirestore(app);
+      const creditDocRef = doc(db, 'credits', id);
 
-      const fetchCreditData = async () => {
-        setLoading(true);
-        const creditDocRef = doc(db, 'credits', id);
-        const creditSnap = await getDoc(creditDocRef);
+      const unsubscribeCredit = onSnapshot(creditDocRef, async (creditSnap) => {
+          if (creditSnap.exists()) {
+              const creditData = { id: creditSnap.id, ...creditSnap.data() } as Credit;
+              setCredit(creditData);
 
-        if (creditSnap.exists()) {
-          const creditData = { id: creditSnap.id, ...creditSnap.data() } as Credit;
-          setCredit(creditData);
-
-          const clientDocRef = doc(db, 'clients', creditData.clientId);
-          const clientSnap = await getDoc(clientDocRef);
-          if (clientSnap.exists()) {
-            setClient({ id: clientSnap.id, ...clientSnap.data() } as Client);
+              if (!client) {
+                const clientDocRef = doc(db, 'clients', creditData.clientId);
+                const clientSnap = await getDoc(clientDocRef);
+                if (clientSnap.exists()) {
+                    setClient({ id: clientSnap.id, ...clientSnap.data() } as Client);
+                } else {
+                    setClient(null);
+                }
+              }
+              
+              const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", creditData.clientId));
+              const unsubscribeGuarantees = onSnapshot(guaranteesQuery, (snapshot) => {
+                  const guaranteesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Guarantee));
+                  setGuarantees(guaranteesList);
+              });
+              
+              setLoading(false);
+              // In a real app, you would probably want to unsubscribe from this listener
+              // return () => unsubscribeGuarantees();
           } else {
-             setClient(null);
+              setCredit(null);
+              setLoading(false);
           }
-          
-          const guaranteesQuery = query(collection(db, "guarantees"), where("clientId", "==", creditData.clientId));
-          const unsubscribeGuarantees = onSnapshot(guaranteesQuery, (snapshot) => {
-              const guaranteesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Guarantee));
-              setGuarantees(guaranteesList);
-          });
-          
-          // In a real app, you would probably want to unsubscribe from this listener
-          // return () => unsubscribeGuarantees();
+      }, (error) => {
+          console.error("Error fetching credit data:", error);
+          setLoading(false);
+      });
 
-        } else {
-          setCredit(null);
-        }
-        setLoading(false);
+      return () => {
+          unsubscribeCredit();
       };
-      
-      fetchCreditData();
     }
-  }, [id]);
+  }, [id, client]);
   
   const handleGuaranteeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -145,8 +149,8 @@ export default function CreditDetailPage() {
       }
   }
 
-  const formatCurrency = (amount: number | undefined) => {
-    if (amount === undefined) return 'C$ 0.00';
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) return 'C$ 0.00';
     return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
