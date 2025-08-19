@@ -53,7 +53,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm mx-auto sm:border sm:shadow-sm rounded-none sm:rounded-lg flex-grow flex flex-col justify-center">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">
-          <img src="img/logo 1.svg" alt="logo" />
+            <Logo className="w-24 h-24 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold">RapiGestion</CardTitle>
           <CardDescription>
