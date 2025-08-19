@@ -18,6 +18,12 @@ interface Payment {
   paymentDate: Timestamp;
 }
 
+interface Credit {
+    id: string;
+    balance: number;
+    totalToPay: number;
+}
+
 interface Client {
     id: string;
     primerNombre: string;
@@ -43,6 +49,7 @@ const gestorName = 'HENRY YASMIR CONTRERAS ZUNIGA'; // Dummy gestor
 export default function ReceiptPage() {
   const [payment, setPayment] = useState<Payment | null>(null);
   const [client, setClient] = useState<Client | null>(null);
+  const [credit, setCredit] = useState<Credit | null>(null);
   const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -77,6 +84,15 @@ export default function ReceiptPage() {
                 } else {
                     setClient(null);
                 }
+
+                const creditDocRef = doc(db, 'credits', paymentData.creditId);
+                const creditSnap = await getDoc(creditDocRef);
+                if (creditSnap.exists()) {
+                    setCredit({ id: creditSnap.id, ...creditSnap.data() } as Credit);
+                } else {
+                    setCredit(null);
+                }
+
             } else {
                 setPayment(null);
             }
@@ -84,6 +100,7 @@ export default function ReceiptPage() {
             console.error("Error fetching receipt data:", error);
             setPayment(null);
             setClient(null);
+            setCredit(null);
         } finally {
             setLoading(false);
         }
@@ -115,11 +132,11 @@ export default function ReceiptPage() {
 
   if (loading) return <Loading />;
   
-  if (!payment || !client) {
+  if (!payment || !client || !credit) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-4">
         <h2 className="text-2xl font-bold">Recibo no encontrado</h2>
-        <p className="text-muted-foreground">El recibo que buscas no existe o fue eliminado.</p>
+        <p className="text-muted-foreground">El recibo o los datos asociados no existen.</p>
         <Button onClick={() => router.back()} className="mt-4">
           <ArrowLeft className="mr-2 h-4 w-4" /> Volver
         </Button>
@@ -132,14 +149,13 @@ export default function ReceiptPage() {
     .join(' ')
     .toUpperCase();
 
-  // Dummy values for receipt details
   const receiptDetails = {
-      cuotaDia: 0,
-      montoAtrasado: 11395.00,
-      diasMora: 94,
-      totalPagar: 11395.00,
-      montoCancelacion: 11395.00,
-      nuevoSaldo: 11295.00,
+      cuotaDia: payment.amount,
+      montoAtrasado: 0.00, // Placeholder, needs logic
+      diasMora: 0, // Placeholder, needs logic
+      totalPagar: payment.amount, // Placeholder, needs logic
+      montoCancelacion: credit.balance + payment.amount,
+      nuevoSaldo: credit.balance,
       concepto: 'ABONO DE CUOTA',
   };
 
