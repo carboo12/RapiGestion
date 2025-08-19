@@ -17,14 +17,13 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { Skeleton } from "./ui/skeleton";
-import { Logo } from "./logo";
 
 interface UserNavProps {
   onSignOut: () => void;
 }
 
 export function UserNav({ onSignOut }: UserNavProps) {
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string, initials: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,7 +41,8 @@ export function UserNav({ onSignOut }: UserNavProps) {
           name = firebaseUser.email.split('@')[0];
         }
 
-        setUser({ name, email: firebaseUser.email || "" });
+        const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+        setUser({ name, email: firebaseUser.email || "", initials });
         
       } else {
         setUser(null);
@@ -61,7 +61,10 @@ export function UserNav({ onSignOut }: UserNavProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 border-2 border-primary">
-          <Logo className="h-8 w-8 text-primary" />
+           <Avatar className="h-8 w-8">
+            <AvatarImage src="/placeholder-user.jpg" />
+            <AvatarFallback className="bg-primary text-primary-foreground">{user?.initials || 'RG'}</AvatarFallback>
+          </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
