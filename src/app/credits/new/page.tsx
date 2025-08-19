@@ -137,11 +137,9 @@ export default function NewCreditPage() {
         const totalInterest = data.amount * (data.interestRate / 100);
         const totalToPay = data.amount + totalInterest;
 
-        // The user explained a different calculation for installmentAmount
-        // Amortization = (Monto a prestar / #cuotas) + interes por cuota
-        const capitalPerInstallment = data.amount / numberOfInstallments;
+        const amortization = data.amount / numberOfInstallments;
         const interestPerInstallment = totalInterest / numberOfInstallments;
-        const installmentAmount = capitalPerInstallment + interestPerInstallment;
+        const installmentAmount = amortization + interestPerInstallment;
         
         const creditData = {
           clientId: selectedClient.id,
@@ -150,6 +148,7 @@ export default function NewCreditPage() {
           interestRate: data.interestRate,
           term: data.term, // in months
           paymentFrequency: data.paymentFrequency,
+          destination: data.destination,
           numberOfInstallments: numberOfInstallments,
           disbursementDate: Timestamp.fromDate(disbursementDateObj),
           firstPaymentDate: Timestamp.fromDate(firstPaymentDateObj),
@@ -157,7 +156,8 @@ export default function NewCreditPage() {
           totalToPay: parseFloat(totalToPay.toFixed(2)),
           balance: parseFloat(totalToPay.toFixed(2)),
           installmentAmount: parseFloat(installmentAmount.toFixed(2)),
-          destination: data.destination,
+          amortization: parseFloat(amortization.toFixed(2)),
+          interestPerInstallment: parseFloat(interestPerInstallment.toFixed(2)),
           gestorId: gestor.email, 
           createdAt: serverTimestamp(),
         };
