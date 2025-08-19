@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, forwardRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, getFirestore, Timestamp } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
@@ -46,6 +46,93 @@ interface CompanySettings {
 
 const gestorName = 'HENRY YASMIR CONTRERAS ZUNIGA'; 
 
+interface ReceiptContentProps {
+  payment: Payment;
+  client: Client;
+  credit: Credit;
+  companySettings: CompanySettings | null;
+  receiptDetails: {
+      cuotaDia: number;
+      montoAtrasado: number;
+      diasMora: number;
+      totalPagar: number;
+      montoCancelacion: number;
+      nuevoSaldo: number;
+      concepto: string;
+  };
+  formatDate: (timestamp: Timestamp | null | undefined) => string;
+  formatCurrency: (amount: number | null | undefined) => string;
+}
+
+const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(({ payment, client, credit, companySettings, receiptDetails, formatDate, formatCurrency }, ref) => {
+    const clientFullName = [client.primerNombre, client.segundoNombre, client.apellido, client.segundoApellido]
+    .filter(Boolean)
+    .join(' ')
+    .toUpperCase();
+    
+    return (
+        <div id="receipt-content" ref={ref} className="bg-white p-6 rounded-lg shadow-md font-sans">
+            <div className="text-center mb-4">
+                <div className="flex justify-center items-center mb-2">
+                    <Logo className="w-20 h-20 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold text-blue-600">{companySettings?.companyName || 'RapiGestion'}</h2>
+                {companySettings?.slogan && <p className="text-sm">{companySettings.slogan}</p>}
+                <p className="text-sm">RUC: {companySettings?.ruc || 'No definido'}</p>
+                <p className="text-sm">Telefono: {companySettings?.phone || 'No definido'}</p>
+                <p className="text-sm">Abono #: {payment.id.substring(0, 5)}</p>
+            </div>
+
+            <div className="border-t border-b border-dashed py-2 mb-4 text-sm">
+                <p>Transaccion: {payment.id.substring(0,5)}</p>
+                <p>Fecha/hora: {formatDate(payment.paymentDate)}</p>
+                <p className="font-bold">CLIENTE: {clientFullName}</p>
+            </div>
+
+            <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                    <span>CUOTA DIA:</span>
+                    <span className="font-semibold">{formatCurrency(receiptDetails.cuotaDia)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span>MONTO ATRASADO:</span>
+                    <span className="font-semibold">{formatCurrency(receiptDetails.montoAtrasado)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span>DIAS MORA:</span>
+                    <span className="font-semibold">{receiptDetails.diasMora}</span>
+                </div>
+                <div className="flex justify-between font-bold text-base">
+                    <span>TOTAL PAGAR:</span>
+                    <span>{formatCurrency(receiptDetails.totalPagar)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span>MONTO CANCELACION:</span>
+                    <span className="font-semibold">{formatCurrency(receiptDetails.montoCancelacion)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="font-bold">TOTAL ABONADO:</span>
+                    <span className="font-bold text-green-600 text-base">{formatCurrency(payment.amount)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span>CONCEPTO:</span>
+                    <span className="font-semibold">{receiptDetails.concepto}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="font-bold">NUEVO SALDO:</span>
+                    <span className="font-bold text-red-600 text-base">{formatCurrency(receiptDetails.nuevoSaldo)}</span>
+                </div>
+            </div>
+
+            <div className="text-center mt-6 border-t pt-2">
+                <p className="text-sm font-bold text-blue-600">{gestorName}</p>
+            </div>
+        </div>
+    );
+});
+ReceiptContent.displayName = 'ReceiptContent';
+
+
 export default function ReceiptPage() {
   const [payment, setPayment] = useState<Payment | null>(null);
   const [client, setClient] = useState<Client | null>(null);
@@ -60,22 +147,13 @@ export default function ReceiptPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    pageStyle: `
-      @media print {
-        @page {
-          size: ${companySettings?.printerWidth || '58mm'};
-          margin: 0;
-        }
-        body {
-          -webkit-print-color-adjust: exact;
-        }
-        #receipt-content {
-          font-size: 8px !important;
-          line-height: 1.2;
-          padding: 2mm;
-        }
+    pageStyle: companySettings?.printerWidth ? `
+      @page {
+        size: ${companySettings.printerWidth};
+        margin: 0;
       }
-    `,
+      body { -webkit-print-color-adjust: exact; }
+    ` : undefined
   });
 
   useEffect(() => {
@@ -163,11 +241,6 @@ export default function ReceiptPage() {
       </div>
     );
   }
-  
-  const clientFullName = [client.primerNombre, client.segundoNombre, client.apellido, client.segundoApellido]
-    .filter(Boolean)
-    .join(' ')
-    .toUpperCase();
 
   const receiptDetails = {
       cuotaDia: payment.amount,
@@ -192,63 +265,16 @@ export default function ReceiptPage() {
           </header>
 
           <main className="flex-1 p-4 space-y-4 pb-24">
-            <div id="receipt-content" ref={componentRef} className="bg-white p-6 rounded-lg shadow-md font-sans">
-                <div className="text-center mb-4">
-                    <div className="flex justify-center items-center mb-2">
-                        <Logo className="w-20 h-20 text-primary" />
-                    </div>
-                    <h2 className="text-xl font-bold text-blue-600">{companySettings?.companyName || 'RapiGestion'}</h2>
-                    {companySettings?.slogan && <p className="text-sm">{companySettings.slogan}</p>}
-                    <p className="text-sm">RUC: {companySettings?.ruc || 'No definido'}</p>
-                    <p className="text-sm">Telefono: {companySettings?.phone || 'No definido'}</p>
-                    <p className="text-sm">Cobro del Dia #: 1</p>
-                </div>
-
-                <div className="border-t border-b border-dashed py-2 mb-4 text-sm">
-                    <p>Transaccion: {payment.id.substring(0,5)}</p>
-                    <p>Fecha/hora: {formatDate(payment.paymentDate)}</p>
-                    <p className="font-bold">CLIENTE: {clientFullName}</p>
-                </div>
-
-                <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                        <span>CUOTA DIA:</span>
-                        <span className="font-semibold">{formatCurrency(receiptDetails.cuotaDia)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>MONTO ATRASADO:</span>
-                        <span className="font-semibold">{formatCurrency(receiptDetails.montoAtrasado)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>DIAS MORA:</span>
-                        <span className="font-semibold">{receiptDetails.diasMora}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-base">
-                        <span>TOTAL PAGAR:</span>
-                        <span>{formatCurrency(receiptDetails.totalPagar)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>MONTO CANCELACION:</span>
-                        <span className="font-semibold">{formatCurrency(receiptDetails.montoCancelacion)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="font-bold">TOTAL ABONADO:</span>
-                        <span className="font-bold text-green-600 text-base">{formatCurrency(payment.amount)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>CONCEPTO:</span>
-                        <span className="font-semibold">{receiptDetails.concepto}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="font-bold">NUEVO SALDO:</span>
-                        <span className="font-bold text-red-600 text-base">{formatCurrency(receiptDetails.nuevoSaldo)}</span>
-                    </div>
-                </div>
-
-                <div className="text-center mt-6 border-t pt-2">
-                    <p className="text-sm font-bold text-blue-600">{gestorName}</p>
-                </div>
-            </div>
+            <ReceiptContent 
+              ref={componentRef}
+              payment={payment}
+              client={client}
+              credit={credit}
+              companySettings={companySettings}
+              receiptDetails={receiptDetails}
+              formatDate={formatDate}
+              formatCurrency={formatCurrency}
+            />
           </main>
         </div>
 
