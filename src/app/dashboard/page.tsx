@@ -35,6 +35,7 @@ const NoCobradosIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState<string>('');
   const [dailyRecovery, setDailyRecovery] = useState(0);
   const [dailyPaymentsCount, setDailyPaymentsCount] = useState(0);
@@ -48,12 +49,16 @@ export default function DashboardPage() {
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
-          setUserName(userDocSnap.data().name.toUpperCase());
+          const userData = userDocSnap.data();
+          setUserName(userData.name.toUpperCase());
+          setUserRole(userData.role);
         } else {
           setUserName(user.email?.split('@')[0].toUpperCase() || 'Usuario');
+          setUserRole(null); // Role is unknown
         }
       } else {
         setUserName(null);
+        setUserRole(null);
       }
     });
 
@@ -61,7 +66,19 @@ export default function DashboardPage() {
       setCurrentDate(format(new Date(), "PPPPp", { locale: es }));
     }, 1000);
 
-    // Fetch daily recovery data
+    return () => {
+      unsubscribeAuth();
+      clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userRole) return;
+
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const currentUser = auth.currentUser;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -69,12 +86,22 @@ export default function DashboardPage() {
 
     const todayTimestamp = Timestamp.fromDate(today);
     const tomorrowTimestamp = Timestamp.fromDate(tomorrow);
+    
+    let paymentsQuery;
+    
+    const baseQuery = collection(db, "payments");
+    const dateQuery = [
+        where("paymentDate", ">=", todayTimestamp),
+        where("paymentDate", "<", tomorrowTimestamp)
+    ];
 
-    const paymentsQuery = query(
-      collection(db, "payments"),
-      where("paymentDate", ">=", todayTimestamp),
-      where("paymentDate", "<", tomorrowTimestamp)
-    );
+    if (userRole === 'Administrador') {
+      paymentsQuery = query(baseQuery, ...dateQuery);
+    } else if (userRole === 'Gestor de Cobros' && currentUser) {
+      paymentsQuery = query(baseQuery, where("gestorId", "==", currentUser.uid), ...dateQuery);
+    } else {
+        return; // Do not fetch data if role is not defined or user is not available
+    }
 
     const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
       let totalAmount = 0;
@@ -88,11 +115,9 @@ export default function DashboardPage() {
     });
 
     return () => {
-      unsubscribeAuth();
-      unsubscribePayments();
-      clearInterval(timer);
+      if (unsubscribePayments) unsubscribePayments();
     };
-  }, []);
+  }, [userRole]);
 
   return (
     <div className="flex flex-col h-full">
