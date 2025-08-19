@@ -147,6 +147,13 @@ export default function NewCreditPage() {
     return null; 
   }
 
+  const interestRateOptions = [
+    ...Array.from({ length: 9 }, (_, i) => i + 1), // 1-9
+    10, 10.44, 10.5, 11, 11.5, 12, 12.5, 12.66, 13, 13.5,
+    ...Array.from({ length: (40 - 14) * 2 + 1 }, (_, i) => 14 + i * 0.5), // 14-40 in 0.5 steps
+  ];
+
+
   return (
     <div className="flex flex-col h-full -m-4 md:-m-8">
       <div className="flex flex-col flex-1 bg-gray-50 overflow-y-auto no-scrollbar">
@@ -197,17 +204,16 @@ export default function NewCreditPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Tasa de Interés (%)</FormLabel>
-                                        <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)}>
+                                        <Select onValueChange={(value) => field.onChange(parseFloat(value))} defaultValue={String(field.value)}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecciona una tasa" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="10">10%</SelectItem>
-                                                <SelectItem value="15">15%</SelectItem>
-                                                <SelectItem value="20">20%</SelectItem>
-                                                <SelectItem value="25">25%</SelectItem>
+                                                {interestRateOptions.map(rate => (
+                                                    <SelectItem key={rate} value={String(rate)}>{rate}%</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
