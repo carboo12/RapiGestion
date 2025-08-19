@@ -26,7 +26,7 @@ interface Credit {
 }
 
 interface Client {
-    id: string;
+    id:string;
     primerNombre: string;
     segundoNombre?: string;
     apellido: string;
@@ -56,24 +56,6 @@ const ReceiptContent = forwardRef<HTMLDivElement, any>(({ payment, client, credi
 
     return (
         <div id="receipt-content" ref={ref} className="bg-white p-6 rounded-lg shadow-md font-sans text-black">
-            <style>
-              {`
-                @media print {
-                  body * {
-                    visibility: hidden;
-                  }
-                  #receipt-to-print, #receipt-to-print * {
-                    visibility: visible;
-                  }
-                  #receipt-to-print {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
-                  }
-                }
-              `}
-            </style>
             <div className="text-center mb-4">
                 <div className="flex justify-center items-center mb-2">
                     <Logo className="w-20 h-20 text-primary" />
@@ -150,14 +132,37 @@ export default function ReceiptPage() {
   const handlePrint = () => {
     const node = componentRef.current;
     if (node) {
-        const receiptHtml = node.innerHTML;
-        const originalPageHtml = document.body.innerHTML;
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      
+      const pri = iframe.contentWindow;
+      if (pri) {
+        pri.document.open();
+        pri.document.write('<html><head><title>Recibo</title>');
+        // Potentially add styles here if needed, especially for ticket printing
+        pri.document.write('<style>');
+        pri.document.write(`
+            @media print {
+                @page { size: ${companySettings?.printerWidth || 'auto'}; margin: 0; }
+                body { margin: 10px; font-family: sans-serif; }
+            }
+        `);
+        pri.document.write('</style>');
+        pri.document.write('</head><body>');
+        pri.document.write(node.innerHTML);
+        pri.document.write('</body></html>');
+        pri.document.close();
         
-        document.body.innerHTML = receiptHtml;
-        window.print();
-        document.body.innerHTML = originalPageHtml;
-        // We need to re-attach event listeners or simply reload
-        window.location.reload();
+        pri.focus();
+        pri.print();
+        
+        // Clean up the iframe after printing
+        document.body.removeChild(iframe);
+      }
     }
   };
 
@@ -261,7 +266,7 @@ export default function ReceiptPage() {
   return (
     <>
       <div className="flex flex-col h-full -m-4 md:-m-8">
-        <div className="flex flex-col flex-1 bg-gray-50 overflow-y-auto no-scrollbar print:hidden">
+        <div className="flex flex-col flex-1 bg-gray-50 overflow-y-auto no-scrollbar">
           <header className="flex items-center justify-between p-4 bg-white border-b sticky top-0 z-10">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
               <ArrowLeft className="h-6 w-6 text-green-600" />
@@ -271,7 +276,7 @@ export default function ReceiptPage() {
           </header>
 
           <main className="flex-1 p-4 space-y-4 pb-24">
-            <div id="receipt-to-print">
+            <div id="receipt-container">
                <ReceiptContent 
                 ref={componentRef}
                 payment={payment}
@@ -286,7 +291,7 @@ export default function ReceiptPage() {
           </main>
         </div>
 
-        <div className="fixed bottom-4 right-4 z-50 flex gap-3 print:hidden">
+        <div className="fixed bottom-4 right-4 z-50 flex gap-3">
             <Button onClick={handlePrint} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
                 <Printer className="h-7 w-7" />
             </Button>
