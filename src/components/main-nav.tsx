@@ -34,7 +34,10 @@ export function DesktopNav({ userRole }: NavProps) {
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-1 p-4">
           {navItems.map((item) => {
-             const isActive = pathname.startsWith(item.href);
+             let isActive = pathname.startsWith(item.href);
+             if (item.href === '/dashboard') {
+                isActive = pathname.startsWith('/dashboard') || pathname.startsWith('/payments');
+             }
             return (
               <Link
                 href={item.href}
@@ -66,7 +69,10 @@ export function MobileNav({ userRole }: NavProps) {
       <ScrollArea className="h-full w-full whitespace-nowrap">
         <div className="flex h-full w-max items-center">
             {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href);
+              let isActive = pathname.startsWith(item.href);
+              if (item.href === '/dashboard') {
+                 isActive = pathname.startsWith('/dashboard') || pathname.startsWith('/payments');
+              }
 
               return (
                 <Link
