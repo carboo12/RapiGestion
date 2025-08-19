@@ -55,6 +55,7 @@ interface CompanySettings {
     address: string;
     defaultCurrency: string;
     exchangeRate: number;
+    printerWidth: string;
 }
 
 
@@ -65,7 +66,8 @@ export default function SettingsPage() {
         phone: '',
         address: '',
         defaultCurrency: 'C$',
-        exchangeRate: 37.0
+        exchangeRate: 37.0,
+        printerWidth: '58mm',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -100,8 +102,8 @@ export default function SettingsPage() {
         setSettings(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectChange = (value: string) => {
-        setSettings(prev => ({ ...prev, defaultCurrency: value }));
+    const handleSelectChange = (id: keyof CompanySettings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value }));
     };
 
     const handleSaveSettings = async () => {
@@ -155,7 +157,7 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="defaultCurrency">Moneda por Defecto</Label>
-              <Select value={settings.defaultCurrency} onValueChange={handleSelectChange}>
+              <Select value={settings.defaultCurrency} onValueChange={(value) => handleSelectChange('defaultCurrency', value)}>
                 <SelectTrigger id="defaultCurrency">
                   <SelectValue placeholder="Selecciona una moneda" />
                 </SelectTrigger>
@@ -178,13 +180,31 @@ export default function SettingsPage() {
           <CardTitle>Integraciones</CardTitle>
           <CardDescription>Gestiona las integraciones con servicios de terceros.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border p-4">
                 <div>
                     <h4 className="font-medium">Impresoras Bluetooth Portátiles</h4>
                     <p className="text-sm text-muted-foreground">Activa para permitir la impresión de recibos desde dispositivos móviles.</p>
                 </div>
                 <Switch defaultChecked/>
+            </div>
+            <div className="space-y-2 rounded-lg border p-4">
+                <Label htmlFor="printerWidth">Ancho del Papel de Impresión</Label>
+                <Select value={settings.printerWidth} onValueChange={(value) => handleSelectChange('printerWidth', value)}>
+                    <SelectTrigger id="printerWidth">
+                        <SelectValue placeholder="Selecciona un ancho"/>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="58mm">58 mm</SelectItem>
+                        <SelectItem value="55mm">55 mm</SelectItem>
+                        <SelectItem value="50mm">50 mm</SelectItem>
+                        <SelectItem value="49mm">49 mm</SelectItem>
+                        <SelectItem value="48mm">48 mm</SelectItem>
+                    </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                    Selecciona el ancho del rollo de papel para tu impresora térmica.
+                </p>
             </div>
         </CardContent>
       </Card>
