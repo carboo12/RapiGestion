@@ -117,7 +117,7 @@ export default function ClientDetailPage() {
         unsubscribeGuarantees();
       }
     }
-  }, [id]);
+  }, [id, toast]);
 
   const handleReferenceSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -201,14 +201,14 @@ export default function ClientDetailPage() {
       return;
     }
     
-    const clientForCredit = {
-        id: client?.id,
-        name: fullName,
-        hasGuarantees: guarantees.length > 0,
-        hasReferences: references.length > 0,
-    };
-    localStorage.setItem('clientForCredit', JSON.stringify(clientForCredit));
-    router.push('/credits');
+    if (client) {
+        const clientForCredit = {
+            id: client.id,
+            name: fullName,
+        };
+        localStorage.setItem('selectedClient', JSON.stringify(clientForCredit));
+        router.push('/credits/new');
+    }
   }
 
   const handleOpenEditReferenceDialog = (ref: Reference) => {

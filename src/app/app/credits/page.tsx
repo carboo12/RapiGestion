@@ -202,12 +202,12 @@ export default function CreditsPage() {
       )}
 
       <Link href="/clients">
-          <Button
+        <Button
             className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
-          >
+        >
             <PlusCircle className="h-7 w-7" />
             <span className="text-xs mt-1">Agregar</span>
-          </Button>
+        </Button>
       </Link>
     </div>
   )
