@@ -164,6 +164,53 @@ export default function ReceiptPage() {
     }
   };
 
+  const handleShare = async () => {
+    const input = componentRef.current;
+    if (!input) return;
+
+    try {
+        const canvas = await html2canvas(input, {
+            scale: 3,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/png');
+        
+        const printerWidthMm = parseFloat(companySettings?.printerWidth || '58');
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: [printerWidthMm, 297]
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        const pdfBlob = pdf.output('blob');
+
+        const clientFullName = [client?.primerNombre, client?.apellido].filter(Boolean).join(' ');
+        const fileName = `Recibo-${clientFullName.replace(/\s+/g, '-')}.pdf`;
+        
+        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                files: [file],
+                title: `Recibo de Abono - ${companySettings?.companyName}`,
+                text: `Adjunto el recibo de abono para ${clientFullName}.`,
+            });
+        } else {
+            alert("Tu navegador no soporta compartir archivos.");
+        }
+    } catch (error) {
+        console.error('Error sharing PDF:', error);
+        alert("Hubo un error al intentar compartir el recibo.");
+    }
+  };
+
+
   useEffect(() => {
     if (id) {
       const db = getFirestore(app);
@@ -214,7 +261,7 @@ export default function ReceiptPage() {
       
       fetchReceiptData();
     }
-  }, [id]);
+  }, [id, client]);
 
   const formatDate = (timestamp: Timestamp | null | undefined) => {
       if (!timestamp) return 'N/A';
@@ -292,7 +339,7 @@ export default function ReceiptPage() {
             <Button onClick={handlePrint} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
                 <Printer className="h-7 w-7" />
             </Button>
-            <Button variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-blue-500 text-blue-500 bg-white shadow-lg">
+            <Button onClick={handleShare} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-blue-500 text-blue-500 bg-white shadow-lg">
                 <Share2 className="h-7 w-7" />
             </Button>
             <Button onClick={handleAnotherPayment} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
