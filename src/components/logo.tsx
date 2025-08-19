@@ -1,14 +1,10 @@
-import Image from 'next/image';
+'use client';
+import { Coins } from "lucide-react";
 
 export function Logo({className}: {className?: string}) {
   return (
-    <Image
-      src="/logo 1.svg"
-      alt="RapiGestion Logo"
-      width={100}
-      height={100}
+    <Coins
       className={className}
-      priority
     />
   );
 }
