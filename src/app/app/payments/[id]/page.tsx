@@ -212,15 +212,15 @@ export default function ReceiptPage() {
 
         <div className="fixed bottom-0 left-0 right-0 bg-white p-2 border-t shadow-lg-top md:hidden">
             <div className="flex justify-around">
-                 <Button variant="outline" className="flex-1 mx-1 border-green-500 text-green-600">
+                 <Button variant="outline" className="flex-1 mx-1 border-green-500 text-green-600 rounded-full">
                     <Printer className="mr-2 h-5 w-5"/>
                     Imprimir
                  </Button>
-                  <Button variant="outline" className="flex-1 mx-1 border-blue-500 text-blue-600">
+                  <Button variant="outline" className="flex-1 mx-1 border-blue-500 text-blue-600 rounded-full">
                     <Share2 className="mr-2 h-5 w-5"/>
                     Compartir
                  </Button>
-                  <Button variant="outline" className="flex-1 mx-1 border-green-500 text-green-600">
+                  <Button variant="outline" className="flex-1 mx-1 border-green-500 text-green-600 rounded-full">
                     <Wallet className="mr-2 h-5 w-5"/>
                     Abono
                  </Button>
