@@ -8,9 +8,10 @@ import { useToast } from "@/hooks/use-toast"
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { ChevronRight, SlidersHorizontal, User, Search, Loader2 } from "lucide-react"
+import { ChevronRight, SlidersHorizontal, User, Search, Loader2, PlusCircle } from "lucide-react"
 import packageJson from "../../../../package.json";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 
 interface Credit {
@@ -200,6 +201,14 @@ export default function CreditsPage() {
         </main>
       )}
 
+      <Link href="/clients">
+          <Button
+            className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+          >
+            <PlusCircle className="h-7 w-7" />
+            <span className="text-xs mt-1">Agregar</span>
+          </Button>
+      </Link>
     </div>
   )
 }
