@@ -5,7 +5,7 @@ import { doc, getDoc, getFirestore, collection, query, where, onSnapshot, addDoc
 import { app } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Plus, ShieldCheck, DollarSign, List, Edit, Printer, Share2 } from 'lucide-react';
+import { ArrowLeft, Plus, ShieldCheck, DollarSign, List, Edit, Printer, Share2, PlusCircle } from 'lucide-react';
 import Loading from '@/app/loading';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -281,6 +281,12 @@ export default function CreditDetailPage() {
       </div>
 
         <Dialog open={isGuaranteeDialogOpen} onOpenChange={setIsGuaranteeDialogOpen}>
+            <DialogTrigger asChild>
+                 <Button className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight">
+                    <PlusCircle className="h-7 w-7" />
+                    <span className="text-xs mt-1">Garantia</span>
+                </Button>
+            </DialogTrigger>
             <DialogContent className="max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Agregar Nueva Garantía</DialogTitle>
