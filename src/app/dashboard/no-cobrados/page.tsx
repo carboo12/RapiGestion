@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, ChevronRight, Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getFirestore, collection, query, where, onSnapshot, getDocs, Timestamp, doc } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, getDocs, Timestamp, doc, getDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { app } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
