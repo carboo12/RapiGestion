@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
 interface Payment {
   id: string;
@@ -196,9 +197,15 @@ export default function PaymentsListPage() {
                     <Input name="clientName" value={filters.clientName} onChange={handleFilterChange} placeholder="Buscar por nombre de cliente..." className="pl-10" />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <Input name="startDate" type="date" value={filters.startDate} onChange={handleFilterChange} />
+                    <div className="w-full sm:w-auto">
+                        <Label htmlFor="startDate" className="text-sm font-medium">Fecha de Inicio</Label>
+                        <Input id="startDate" name="startDate" type="date" value={filters.startDate} onChange={handleFilterChange} />
+                    </div>
                     <span className="text-muted-foreground hidden sm:inline">-</span>
-                    <Input name="endDate" type="date" value={filters.endDate} onChange={handleFilterChange}/>
+                    <div className="w-full sm:w-auto">
+                        <Label htmlFor="endDate" className="text-sm font-medium">Fecha de Fin</Label>
+                        <Input id="endDate" name="endDate" type="date" value={filters.endDate} onChange={handleFilterChange}/>
+                    </div>
                 </div>
             </div>
         </CardContent>
