@@ -21,6 +21,8 @@ import { Separator } from '@/components/ui/separator';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { logAction } from '@/lib/action-logger';
+import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 
 interface Notification {
@@ -248,8 +250,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                              )}
                         </PopoverContent>
                     </Popover>
-
                   </div>
+                  <ThemeToggle />
                   <UserNav onSignOut={handleSignOut} userRole={userRole} />
                 </div>
             </header>
@@ -288,10 +290,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <div className="h-dvh overflow-hidden">
-           {isLoginPage ? children : <AppLayout>{children}</AppLayout>}
-        </div>
-        <Toaster />
+         <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="h-dvh overflow-hidden">
+              {isLoginPage ? children : <AppLayout>{children}</AppLayout>}
+            </div>
+            <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
