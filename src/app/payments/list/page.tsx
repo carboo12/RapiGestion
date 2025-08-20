@@ -134,6 +134,10 @@ export default function PaymentsListPage() {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
   };
+  
+  const formatCurrency = (amount: number) => {
+    return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
 
   const filteredPayments = useMemo(() => {
     let result = payments.map(p => ({...p, clientName: clientMap.get(p.clientId) ? `${clientMap.get(p.clientId)?.primerNombre} ${clientMap.get(p.clientId)?.apellido}`.trim() : 'Cliente Desconocido' }));
@@ -156,6 +160,11 @@ export default function PaymentsListPage() {
 
     return result.sort((a,b) => b.paymentDate.toDate().getTime() - a.paymentDate.toDate().getTime());
   }, [payments, clientMap, filters]);
+  
+  const totalRecovered = useMemo(() => {
+    return filteredPayments.reduce((acc, payment) => acc + payment.amount, 0);
+  }, [filteredPayments]);
+
 
   const formatTimestamp = (timestamp: Timestamp) => {
     if (!timestamp) return 'N/A';
@@ -164,10 +173,6 @@ export default function PaymentsListPage() {
     } catch (e) {
       return 'Fecha inválida';
     }
-  }
-
-  const formatCurrency = (amount: number) => {
-    return `C$ ${amount.toLocaleString('es-NI', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   return (
@@ -201,7 +206,12 @@ export default function PaymentsListPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Pagos</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <CardTitle>Lista de Pagos</CardTitle>
+              <div className="text-sm font-semibold">
+                  Total Recuperado: <span className="text-green-600">{formatCurrency(totalRecovered)}</span>
+              </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
