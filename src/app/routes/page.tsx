@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Map, MapPin, Phone, PlusCircle, Navigation, Loader2 } from "lucide-react";
+import { Map as MapIcon, MapPin, Phone, PlusCircle, Navigation, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged, User as FirebaseAuthUser } from "firebase/auth";
@@ -174,7 +174,7 @@ export default function RoutesPage() {
               </div>
               <Separator />
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2"><Map className="w-4 h-4 text-muted-foreground" /> {route.creditIds.length} paradas en la ruta</h4>
+                <h4 className="text-sm font-semibold flex items-center gap-2"><MapIcon className="w-4 h-4 text-muted-foreground" /> {route.creditIds.length} paradas en la ruta</h4>
                 {/* Here you would fetch and display the stops (clients) based on route.creditIds */}
               </div>
             </CardContent>
