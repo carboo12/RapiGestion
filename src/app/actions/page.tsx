@@ -111,7 +111,7 @@ export default function ActionsPage() {
             <div className="flex justify-center items-center py-10">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : (
+          ) : logs.length > 0 ? (
             <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -142,6 +142,10 @@ export default function ActionsPage() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-muted-foreground">
+                No se encontraron registros de acciones.
             </div>
           )}
         </CardContent>
