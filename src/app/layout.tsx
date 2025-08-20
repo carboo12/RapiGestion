@@ -135,30 +135,39 @@ function AppLayout({ children }: { children: React.ReactNode }) {
               const currentNotifications: Notification[] = [];
               let currentUnreadCount = 0;
 
-              snapshot.forEach(doc => {
-                  const notificationData = { id: doc.id, ...doc.data() } as Notification;
-                  currentNotifications.push(notificationData);
-                  if (!notificationData.read) {
-                      currentUnreadCount++;
+              snapshot.docChanges().forEach((change) => {
+                  const notificationData = { id: change.doc.id, ...change.doc.data() } as Notification;
+
+                  if (change.type === "added") {
+                      currentNotifications.unshift(notificationData);
+                      if (!notificationData.read) {
+                          currentUnreadCount++;
+                      }
+                      // Handle new notifications for native display
+                      if (!isFirstLoadForUser[user.uid]) {
+                          if ('Notification' in window && Notification.permission === 'granted') {
+                              new Notification(notificationData.title, {
+                                  body: notificationData.description,
+                                  icon: '/logo1.svg',
+                                  vibrate: [200, 100, 200],
+                              });
+                          }
+                      }
+                  }
+                  if (change.type === "modified") {
+                      const index = currentNotifications.findIndex(n => n.id === notificationData.id);
+                      if (index > -1) {
+                          currentNotifications[index] = notificationData;
+                          if (notificationData.read) currentUnreadCount--;
+                      }
+                  }
+                   if (change.type === "removed") {
+                      currentNotifications.filter(n => n.id !== notificationData.id);
                   }
               });
-              
+
               setNotifications(currentNotifications);
               setUnreadCount(currentUnreadCount);
-
-              // Handle new notifications for native display
-              snapshot.docChanges().forEach((change) => {
-                if(change.type === 'added' && !isFirstLoadForUser[user.uid]) {
-                    const notificationData = change.doc.data() as Notification;
-                     if ('Notification' in window && Notification.permission === 'granted') {
-                        new Notification(notificationData.title, {
-                            body: notificationData.description,
-                            icon: '/logo1.svg',
-                            vibrate: [200, 100, 200],
-                        });
-                    }
-                }
-              });
               
               if(isFirstLoadForUser[user.uid]) {
                 setTimeout(() => { isFirstLoadForUser[user.uid] = false }, 2000);
@@ -304,7 +313,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                   <UserNav onSignOut={handleSignOut} userRole={userRole} />
                 </div>
             </header>
-            <main className="flex-1 overflow-auto">
+            <main className="flex-1 overflow-auto pb-16 md:pb-0">
               <div className="p-4 md:p-6 lg:p-8 h-full">
                 {children}
               </div>
