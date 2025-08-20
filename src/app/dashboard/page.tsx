@@ -79,37 +79,42 @@ export default function DashboardPage() {
     const auth = getAuth(app);
     const currentUser = auth.currentUser;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
-    const todayTimestamp = Timestamp.fromDate(today);
-    const tomorrowTimestamp = Timestamp.fromDate(tomorrow);
-    
+    const todayTimestamp = Timestamp.fromDate(todayStart);
+
     let paymentsQuery;
     
-    const baseQuery = collection(db, "payments");
-    const dateQuery = [
-        where("paymentDate", ">=", todayTimestamp),
-        where("paymentDate", "<", tomorrowTimestamp)
-    ];
-
     if (userRole === 'Administrador') {
-      paymentsQuery = query(baseQuery, ...dateQuery);
+      paymentsQuery = query(
+        collection(db, "payments"),
+        where("paymentDate", ">=", todayTimestamp)
+      );
     } else if (userRole === 'Gestor de Cobros' && currentUser) {
-      paymentsQuery = query(baseQuery, where("gestorId", "==", currentUser.uid), ...dateQuery);
+      paymentsQuery = query(
+        collection(db, "payments"),
+        where("gestorId", "==", currentUser.uid)
+      );
     } else {
-        return; // Do not fetch data if role is not defined or user is not available
+        return; 
     }
 
     const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
       let totalAmount = 0;
+      let paymentCount = 0;
       snapshot.forEach((doc) => {
-        totalAmount += doc.data().amount;
+        const payment = doc.data();
+        const paymentDate = payment.paymentDate.toDate();
+        if (paymentDate >= todayStart && paymentDate <= todayEnd) {
+            totalAmount += payment.amount;
+            paymentCount++;
+        }
       });
       setDailyRecovery(totalAmount);
-      setDailyPaymentsCount(snapshot.size);
+      setDailyPaymentsCount(paymentCount);
     }, (error) => {
       console.error("Error fetching daily payments:", error);
     });
