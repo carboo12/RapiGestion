@@ -161,6 +161,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       clearTimeout(activityTimer);
       activityTimer = setTimeout(() => {
           if (auth.currentUser) {
+            toast({
+              title: "Sesión Expirada",
+              description: "Tu sesión ha sido cerrada por inactividad.",
+            });
             handleSignOut();
           }
       }, 30 * 60 * 1000); // 30 minutos
