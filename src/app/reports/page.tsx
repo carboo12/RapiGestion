@@ -3,14 +3,17 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { FileClock, UserCheck, UserX, LineChart, Users, BarChartHorizontal } from "lucide-react";
+import { FileClock, UserCheck, UserX, LineChart, Users, BarChartHorizontal, PieChart } from "lucide-react";
 import { ListFilter } from "lucide-react";
 
 import PendingPaymentsReport from '@/components/reports/pending-payments-report';
 import OverdueClientsReport from '@/components/reports/overdue-clients-report';
 import DebtFreeClientsReport from '@/components/reports/debt-free-clients-report';
+import FinancialSummaryReport from '@/components/reports/financial-summary-report';
+import CollectorPerformanceReport from '@/components/reports/collector-performance-report';
+import PortfolioSummaryReport from '@/components/reports/portfolio-summary-report';
 
-type ReportType = 'pending' | 'overdue' | 'debt-free' | 'financial' | 'collector';
+type ReportType = 'pending' | 'overdue' | 'debt-free' | 'financial' | 'collector' | 'portfolio';
 
 interface Report {
     id: ReportType;
@@ -25,8 +28,9 @@ const reports: Report[] = [
     { id: 'pending', title: 'Clientes Pendientes', description: 'Listado de clientes con saldo por pagar.', icon: FileClock, component: PendingPaymentsReport, status: 'active' },
     { id: 'overdue', title: 'Clientes en Mora', description: 'Listado de clientes con créditos vencidos.', icon: UserX, component: OverdueClientsReport, status: 'active' },
     { id: 'debt-free', title: 'Clientes Cancelados', description: 'Listado de clientes sin deudas activas.', icon: UserCheck, component: DebtFreeClientsReport, status: 'active' },
-    { id: 'financial', title: 'Resumen Financiero', description: 'Inversión, recuperación y saldos pendientes.', icon: LineChart, component: null, status: 'construction' },
-    { id: 'collector', title: 'Rendimiento de Gestores', description: 'Análisis de efectividad de los gestores.', icon: BarChartHorizontal, component: null, status: 'construction' }
+    { id: 'financial', title: 'Resumen Financiero', description: 'Inversión, recuperación y saldos pendientes.', icon: LineChart, component: FinancialSummaryReport, status: 'active' },
+    { id: 'collector', title: 'Rendimiento de Gestores', description: 'Análisis de efectividad de los gestores.', icon: BarChartHorizontal, component: CollectorPerformanceReport, status: 'active' },
+    { id: 'portfolio', title: 'Resumen de Cartera', description: 'Distribución de créditos por estado.', icon: PieChart, component: PortfolioSummaryReport, status: 'active' }
 ];
 
 export default function ReportsPage() {
