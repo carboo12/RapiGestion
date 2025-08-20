@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -73,33 +74,21 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!userRole) return;
-
     const db = getFirestore(app);
     const auth = getAuth(app);
     const currentUser = auth.currentUser;
+    
+    if (!currentUser) return;
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    let paymentsQuery;
-    
-    if (userRole === 'Administrador') {
-      const todayTimestamp = Timestamp.fromDate(todayStart);
-      paymentsQuery = query(
-        collection(db, "payments"),
-        where("paymentDate", ">=", todayTimestamp)
-      );
-    } else if (userRole === 'Gestor de Cobros' && currentUser) {
-      paymentsQuery = query(
-        collection(db, "payments"),
-        where("gestorId", "==", currentUser.uid)
-      );
-    } else {
-        return; 
-    }
+    const paymentsQuery = query(
+      collection(db, "payments"),
+      where("gestorId", "==", currentUser.uid)
+    );
 
     const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
       let totalAmount = 0;
@@ -121,7 +110,7 @@ export default function DashboardPage() {
     return () => {
       if (unsubscribePayments) unsubscribePayments();
     };
-  }, [userRole]);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
