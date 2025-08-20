@@ -8,12 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, MapIcon, Save } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import GoogleMap from "@/components/google-map";
 
 interface User {
   id: string;
@@ -27,6 +28,7 @@ interface Client {
     primerNombre: string;
     apellido: string;
     direccion: string;
+    location?: string | null;
 }
 
 interface Credit {
@@ -34,7 +36,14 @@ interface Credit {
   clientName: string;
   clientId: string;
   clientAddress: string;
+  clientLocation?: string | null;
   amountToPay: number;
+}
+
+interface Marker {
+    lat: number;
+    lng: number;
+    label: string;
 }
 
 export default function AssignRoutePage() {
@@ -66,12 +75,10 @@ export default function AssignRoutePage() {
         const creditsRef = collection(db, 'credits');
         const qCredits = query(creditsRef, where("status", "in", ["Activo", "Vencido"]));
         const creditSnapshot = await getDocs(qCredits);
-        const creditsData = creditSnapshot.docs.map(doc => doc.data());
 
         const clientsRef = collection(db, 'clients');
         const clientSnapshot = await getDocs(clientsRef);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
-        const clientMap = new Map(clientList.map(c => [c.id, c]));
+        const clientMap = new Map(clientSnapshot.docs.map(c => [c.id, c.data() as Client]));
 
         const creditList = creditSnapshot.docs.map(doc => {
             const data = doc.data();
@@ -81,6 +88,7 @@ export default function AssignRoutePage() {
                 clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
                 clientId: data.clientId,
                 clientAddress: client ? client.direccion : 'Dirección no disponible',
+                clientLocation: client?.location,
                 amountToPay: data.balance,
             } as Credit;
         });
@@ -96,6 +104,24 @@ export default function AssignRoutePage() {
 
     fetchData();
   }, [toast]);
+  
+  const selectedMarkers = useMemo<Marker[]>(() => {
+    return selectedCredits
+      .map(creditId => {
+        const credit = pendingCredits.find(c => c.id === creditId);
+        if (!credit || !credit.clientLocation) return null;
+        
+        const match = credit.clientLocation.match(/Lat: ([-.\d]+), Lon: ([-.\d]+)/);
+        if (!match) return null;
+
+        return {
+          lat: parseFloat(match[1]),
+          lng: parseFloat(match[2]),
+          label: credit.clientName.charAt(0)
+        };
+      })
+      .filter((marker): marker is Marker => marker !== null);
+  }, [selectedCredits, pendingCredits]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -207,8 +233,12 @@ export default function AssignRoutePage() {
                 <CardTitle>Mapa</CardTitle>
                 <CardDescription>Vista previa de la ruta.</CardDescription>
             </CardHeader>
-            <CardContent className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <MapIcon className="w-16 h-16 text-muted-foreground" />
+            <CardContent className="aspect-square bg-muted rounded-lg flex items-center justify-center p-0 overflow-hidden">
+                { selectedMarkers.length > 0 ? (
+                    <GoogleMap markers={selectedMarkers} />
+                 ) : (
+                    <MapIcon className="w-16 h-16 text-muted-foreground" />
+                 )}
             </CardContent>
         </Card>
 
@@ -226,6 +256,7 @@ export default function AssignRoutePage() {
                         <Checkbox 
                           onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                           checked={selectedCredits.length === pendingCredits.length && pendingCredits.length > 0}
+                          disabled={pendingCredits.length === 0}
                         />
                     </TableHead>
                     <TableHead>Cliente</TableHead>
@@ -234,20 +265,28 @@ export default function AssignRoutePage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {pendingCredits.map((credit) => (
-                    <TableRow key={credit.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedCredits.includes(credit.id)}
-                            onCheckedChange={(checked) => handleSelectCredit(credit.id, checked as boolean)}
-                            id={`credit-${credit.id}`}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{credit.clientName}</TableCell>
-                        <TableCell className="text-muted-foreground">{credit.clientAddress}</TableCell>
-                        <TableCell className="text-right">C$ {(credit.amountToPay || 0).toFixed(2)}</TableCell>
-                    </TableRow>
-                    ))}
+                    {pendingCredits.length > 0 ? (
+                        pendingCredits.map((credit) => (
+                        <TableRow key={credit.id}>
+                            <TableCell>
+                            <Checkbox
+                                checked={selectedCredits.includes(credit.id)}
+                                onCheckedChange={(checked) => handleSelectCredit(credit.id, checked as boolean)}
+                                id={`credit-${credit.id}`}
+                            />
+                            </TableCell>
+                            <TableCell className="font-medium">{credit.clientName}</TableCell>
+                            <TableCell className="text-muted-foreground">{credit.clientAddress}</TableCell>
+                            <TableCell className="text-right">C$ {(credit.amountToPay || 0).toFixed(2)}</TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                No hay créditos pendientes.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
                 </Table>
             </div>
