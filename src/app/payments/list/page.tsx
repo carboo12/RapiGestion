@@ -177,7 +177,7 @@ export default function PaymentsListPage() {
   }
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-6 pb-20">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Historial de Pagos</h2>
         <p className="text-muted-foreground">
@@ -191,10 +191,11 @@ export default function PaymentsListPage() {
             <CardDescription>Busca por cliente o filtra por un rango de fechas.</CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="flex flex-col md:flex-row gap-4">
+             <div className="flex flex-col md:flex-row md:items-end gap-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input name="clientName" value={filters.clientName} onChange={handleFilterChange} placeholder="Buscar por nombre de cliente..." className="pl-10" />
+                    <Label htmlFor="clientName" className="text-sm font-medium">Buscar Cliente</Label>
+                    <Search className="absolute left-3 bottom-2.5 h-5 w-5 text-muted-foreground" />
+                    <Input id="clientName" name="clientName" value={filters.clientName} onChange={handleFilterChange} placeholder="Nombre del cliente..." className="pl-10" />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <div className="w-full sm:w-auto">
