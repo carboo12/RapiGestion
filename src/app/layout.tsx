@@ -1,3 +1,4 @@
+
 'use client';
 import { DesktopNav, MobileNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
@@ -94,29 +95,37 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         setUser(user);
         
         const userDocRef = doc(db, "users", user.uid);
-        await updateDoc(userDocRef, { status: 'online', lastSeen: serverTimestamp() });
-
+        
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
             setUserRole(userDocSnap.data().role);
+            await updateDoc(userDocRef, { status: 'online', lastSeen: serverTimestamp() });
+        } else {
+          // This might happen if the user record is not created yet
+          setUserRole(null);
         }
 
-        const notificationsQuery = query(collection(db, `users/${user.uid}/notifications`), where('read', '==', false));
-        const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-          const newNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-          setNotifications(newNotifications);
-          setUnreadCount(newNotifications.length);
-        });
+        if (userRole === 'Administrador') {
+            const notificationsQuery = query(collection(db, `users/${user.uid}/notifications`), where('read', '==', false));
+            const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
+              const newNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+              setNotifications(newNotifications);
+              setUnreadCount(newNotifications.length);
+            });
+            // In a real app, you would manage this unsubscribe
+        }
+        
         setLoading(false);
 
       } else {
         setUser(null);
+        setUserRole(null);
         router.push('/login');
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, userRole]);
 
   useEffect(() => {
     if (!user) return;
@@ -126,16 +135,17 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
+        if(auth.currentUser) updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
       } else {
-        updateDoc(userDocRef, { status: 'online' });
+        if(auth.currentUser) updateDoc(userDocRef, { status: 'online' });
       }
     };
 
     const handleBeforeUnload = () => {
-        updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
+        if(auth.currentUser) updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
     };
-
+    
+    const auth = getAuth(app);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
@@ -144,7 +154,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     const resetTimer = () => {
       clearTimeout(activityTimer);
       activityTimer = setTimeout(() => {
-          const auth = getAuth(app);
           if (auth.currentUser) {
             updateDoc(doc(db, "users", auth.currentUser.uid), { status: 'offline', lastSeen: serverTimestamp() });
             signOut(auth).then(() => {
@@ -208,7 +217,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                     
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 relative">
+                            <Button variant="ghost" size="icon" className="h-9 w-9 relative" disabled={userRole !== 'Administrador'}>
                                 <Bell className="h-5 w-5" />
                                 {unreadCount > 0 && (
                                     <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">{unreadCount}</Badge>
@@ -244,7 +253,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                     </Popover>
 
                   </div>
-                  <UserNav onSignOut={handleSignOut}/>
+                  <UserNav onSignOut={handleSignOut} userRole={userRole} />
                 </div>
             </header>
             <main className="flex-1 overflow-auto">

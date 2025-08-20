@@ -1,3 +1,4 @@
+
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -20,9 +21,10 @@ import { Skeleton } from "./ui/skeleton";
 
 interface UserNavProps {
   onSignOut: () => void;
+  userRole: string | null;
 }
 
-export function UserNav({ onSignOut }: UserNavProps) {
+export function UserNav({ onSignOut, userRole }: UserNavProps) {
   const [user, setUser] = useState<{ name: string; email: string, initials: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +64,7 @@ export function UserNav({ onSignOut }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 border-2 border-primary">
            <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder-user.jpg" />
+            <AvatarImage src="/placeholder-user.jpg" data-ai-hint="avatar placeholder" />
             <AvatarFallback className="bg-primary text-primary-foreground">{user?.initials || 'RG'}</AvatarFallback>
           </Avatar>
         </Button>
@@ -82,30 +84,34 @@ export function UserNav({ onSignOut }: UserNavProps) {
             <User className="mr-2 h-4 w-4" />
             <span>Perfil</span>
           </DropdownMenuItem>
-          <Link href="/users">
-            <DropdownMenuItem>
-              <Users className="mr-2 h-4 w-4" />
-              <span>Usuarios</span>
-            </DropdownMenuItem>
-          </Link>
-          <Link href="/actions">
-            <DropdownMenuItem>
-                <ShieldQuestion className="mr-2 h-4 w-4" />
-                <span>Acciones</span>
-            </DropdownMenuItem>
-          </Link>
-           <Link href="/reports">
-            <DropdownMenuItem>
-                <FileText className="mr-2 h-4 w-4" />
-                <span>Reportes</span>
-            </DropdownMenuItem>
-          </Link>
-          <Link href="/settings">
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Configuración</span>
-            </DropdownMenuItem>
-          </Link>
+          {userRole === 'Administrador' && (
+            <>
+              <Link href="/users">
+                <DropdownMenuItem>
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>Usuarios</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/actions">
+                <DropdownMenuItem>
+                    <ShieldQuestion className="mr-2 h-4 w-4" />
+                    <span>Acciones</span>
+                </DropdownMenuItem>
+              </Link>
+               <Link href="/reports">
+                <DropdownMenuItem>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Reportes</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/settings">
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configuración</span>
+                </DropdownMenuItem>
+              </Link>
+            </>
+          )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onSignOut}>

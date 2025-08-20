@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from "@/components/ui/button"
 import {
@@ -31,7 +32,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useEffect, useRef } from "react"
 import { app } from "@/lib/firebase"
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth"
 import { getFirestore, collection, doc, setDoc, onSnapshot, Timestamp, updateDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
@@ -75,6 +76,7 @@ export default function UsersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const addUserFormRef = useRef<HTMLFormElement>(null);
+  const [adminCredentials, setAdminCredentials] = useState<{email: string, pass: string} | null>(null);
 
   useEffect(() => {
     const db = getFirestore(app);
@@ -109,8 +111,31 @@ export default function UsersPage() {
     const password = formData.get('password') as string;
     const role = formData.get('role') as string;
 
+    const auth = getAuth(app);
+    const admin = auth.currentUser;
+
+    if (!admin) {
+        toast({ title: "Error", description: "No se pudo obtener el usuario administrador actual.", variant: "destructive" });
+        return;
+    }
+    
+    // This is a workaround since there's no client-side way to get the password.
+    // We prompt the admin for their password once to re-authenticate.
+    let adminPass = adminCredentials?.pass;
+    if (admin.email !== adminCredentials?.email) {
+        adminPass = prompt('Para continuar, por favor ingresa tu contraseña de administrador:');
+        if (!adminPass) {
+            toast({ title: "Cancelado", description: "Operación cancelada por el usuario."});
+            return;
+        }
+        setAdminCredentials({email: admin.email!, pass: adminPass});
+    }
+
+    if (!adminPass) return;
+
+
     try {
-      const auth = getAuth(app);
+      // This function logs in the new user, so we have to log back in as admin.
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
@@ -123,6 +148,9 @@ export default function UsersPage() {
         lastSeen: Timestamp.now()
       });
 
+      // Re-authenticate as admin
+      await signInWithEmailAndPassword(auth, admin.email!, adminPass);
+      
       toast({
         title: "Éxito",
         description: "Usuario agregado correctamente.",
@@ -135,11 +163,17 @@ export default function UsersPage() {
 
     } catch (error: any) {
       console.error("Error adding user: ", error);
-      toast({
-        title: "Error al agregar usuario",
-        description: error.message,
-        variant: "destructive",
-      })
+       // If re-authentication fails, clear the stored password
+      if (error.code === 'auth/wrong-password') {
+          setAdminCredentials(null);
+          toast({ title: "Error de Autenticación", description: "La contraseña de administrador es incorrecta.", variant: "destructive" });
+      } else {
+          toast({
+            title: "Error al agregar usuario",
+            description: error.message,
+            variant: "destructive",
+          })
+      }
     }
   };
   

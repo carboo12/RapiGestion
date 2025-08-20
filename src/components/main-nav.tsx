@@ -1,7 +1,7 @@
 
 'use client';
 import { usePathname } from 'next/navigation';
-import { Wallet, Users, CreditCard, Map } from 'lucide-react';
+import { Wallet, Users, CreditCard, Map, Settings, FileText, ShieldQuestion } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
@@ -16,6 +16,10 @@ const allNavItems = [
   { href: '/clients', icon: Users, label: 'Clientes', roles: ['Administrador', 'Gestor de Cobros'] },
   { href: '/credits', icon: CreditCard, label: 'Creditos', roles: ['Administrador', 'Gestor de Cobros'] },
   { href: '/routes', icon: Map, label: 'Rutas', roles: ['Administrador', 'Gestor de Cobros'] },
+  { href: '/reports', icon: FileText, label: 'Reportes', roles: ['Administrador'] },
+  { href: '/actions', icon: ShieldQuestion, label: 'Acciones', roles: ['Administrador'] },
+  { href: '/users', icon: Users, label: 'Usuarios', roles: ['Administrador'] },
+  { href: '/settings', icon: Settings, label: 'Ajustes', roles: ['Administrador'] },
 ];
 
 export function DesktopNav({ userRole }: NavProps) {
@@ -38,6 +42,11 @@ export function DesktopNav({ userRole }: NavProps) {
              if (item.href === '/dashboard') {
                 isActive = pathname.startsWith('/dashboard') || pathname.startsWith('/payments');
              }
+             if (item.href === '/clients' && (pathname.startsWith('/credits/new') || pathname.startsWith('/credits/') && pathname.split('/').length > 2)) {
+                isActive = false;
+             }
+
+
             return (
               <Link
                 href={item.href}
@@ -73,6 +82,9 @@ export function MobileNav({ userRole }: NavProps) {
               if (item.href === '/dashboard') {
                  isActive = pathname.startsWith('/dashboard') || pathname.startsWith('/payments');
               }
+               if (item.href === '/clients' && (pathname.startsWith('/credits/new') || pathname.startsWith('/credits/') && pathname.split('/').length > 2)) {
+                isActive = false;
+             }
 
               return (
                 <Link
