@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { app } from "@/lib/firebase"
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
 import { getFirestore, collection, doc, setDoc, onSnapshot, Timestamp, updateDoc } from "firebase/firestore"
@@ -74,6 +74,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const addUserFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const db = getFirestore(app);
@@ -127,8 +128,10 @@ export default function UsersPage() {
         description: "Usuario agregado correctamente.",
       });
 
+      if (addUserFormRef.current) {
+        addUserFormRef.current.reset();
+      }
       setIsAddDialogOpen(false);
-      e.currentTarget.reset();
 
     } catch (error: any) {
       console.error("Error adding user: ", error);
@@ -255,7 +258,7 @@ export default function UsersPage() {
               Completa los detalles para agregar un nuevo usuario al sistema.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAddUser}>
+          <form onSubmit={handleAddUser} ref={addUserFormRef}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
