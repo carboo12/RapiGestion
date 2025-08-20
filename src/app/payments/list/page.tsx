@@ -20,8 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, SlidersHorizontal, Loader2, Eye } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { getFirestore, collection, onSnapshot, query, Timestamp } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot, query, Timestamp, where, doc, getDoc } from "firebase/firestore";
 import { app } from "@/lib/firebase";
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from "next/link";
@@ -44,6 +45,10 @@ interface Client {
     apellido: string;
 }
 
+interface User {
+  role: string;
+}
+
 export default function PaymentsListPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,14 +58,36 @@ export default function PaymentsListPage() {
     startDate: '',
     endDate: '',
   });
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const { toast } = useToast();
 
   useEffect(() => {
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setUserRole((userDocSnap.data() as User).role);
+        } else {
+          setUserRole(null);
+        }
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+      }
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
     const db = getFirestore(app);
     const clientsCollection = collection(db, 'clients');
-    const paymentsCollection = collection(db, 'payments');
-
+    
     const unsubClients = onSnapshot(clientsCollection, (snapshot) => {
         const newClientMap = new Map();
         snapshot.forEach(doc => newClientMap.set(doc.id, { id: doc.id, ...doc.data() }));
@@ -70,7 +97,24 @@ export default function PaymentsListPage() {
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron cargar los clientes.' });
     });
 
-    const unsubPayments = onSnapshot(paymentsCollection, (snapshot) => {
+    if (!currentUser || userRole === null) {
+      if (userRole === null && currentUser) {
+        // Still waiting for role
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+    
+    setLoading(true);
+    let paymentsQuery;
+    if (userRole === 'Administrador') {
+      paymentsQuery = query(collection(db, 'payments'));
+    } else {
+      paymentsQuery = query(collection(db, 'payments'), where("gestorId", "==", currentUser.uid));
+    }
+
+    const unsubPayments = onSnapshot(paymentsQuery, (snapshot) => {
       const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
       setPayments(paymentsData);
       setLoading(false);
@@ -84,7 +128,7 @@ export default function PaymentsListPage() {
         unsubClients();
         unsubPayments();
     };
-  }, [toast]);
+  }, [toast, currentUser, userRole]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
