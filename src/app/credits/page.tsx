@@ -1,7 +1,7 @@
 'use client';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getFirestore, collection, onSnapshot, getDocs, Timestamp } from "firebase/firestore"
+import { getFirestore, collection, onSnapshot, getDocs, Timestamp, query, where } from "firebase/firestore"
 import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useState, useEffect } from "react"
@@ -11,12 +11,17 @@ import { ChevronRight, SlidersHorizontal, User, Search, Loader2, PlusCircle } fr
 import packageJson from "../../../package.json";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 
 interface Client {
     id: string;
     primerNombre: string;
     apellido: string;
+}
+
+interface UserData {
+  role: string;
 }
 
 interface Credit {
@@ -128,43 +133,118 @@ const CreditItem = ({ credit, onClick }: { credit: Credit, onClick: (creditId: s
 export default function CreditsPage() {
   const [credits, setCredits] = useState<Credit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const { toast } = useToast();
   const router = useRouter();
-
+  
   useEffect(() => {
+    const auth = getAuth(app);
     const db = getFirestore(app);
-    setLoading(true);
 
-    const unsubscribeCredits = onSnapshot(collection(db, 'credits'), async (creditSnapshot) => {
-        const creditsData = creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Credit, 'clientName'>));
-
-        const clientsRef = collection(db, 'clients');
-        const clientSnapshot = await getDocs(clientsRef);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
-        const clientMap = new Map(clientList.map(c => [c.id, c]));
-
-        const enrichedCredits = creditsData.map(credit => {
-            const client = clientMap.get(credit.clientId);
-            return {
-                ...credit,
-                clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-            };
-        });
-
-        setCredits(enrichedCredits);
-        setLoading(false);
-    }, (error) => {
-        console.error("Error fetching credits:", error);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudieron cargar los créditos.",
-        });
-        setLoading(false);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            setCurrentUser(user);
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                setUserRole(userDocSnap.data().role);
+            } else {
+                setUserRole(null);
+                setLoading(false);
+            }
+        } else {
+            setCurrentUser(null);
+            setUserRole(null);
+            setLoading(false);
+        }
     });
 
-    return () => unsubscribeCredits();
-  }, [toast]);
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!userRole || !currentUser) {
+        if(!currentUser && !userRole) setLoading(false);
+        return;
+    }
+
+    setLoading(true);
+    const db = getFirestore(app);
+
+    const fetchAllCredits = async () => {
+        const creditsRef = collection(db, 'credits');
+        const creditSnapshot = await getDocs(creditsRef);
+        return creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Credit, 'clientName'>));
+    };
+
+    const fetchRouteCreditIds = async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const routesRef = collection(db, 'routes');
+        const q = query(routesRef, 
+            where("collectorId", "==", currentUser.uid),
+            where("date", ">=", Timestamp.fromDate(today)),
+            where("date", "<", Timestamp.fromDate(tomorrow))
+        );
+        const routeSnapshot = await getDocs(q);
+        if (!routeSnapshot.empty) {
+            return routeSnapshot.docs[0].data().creditIds as string[];
+        }
+        return [];
+    };
+
+    const loadData = async () => {
+        try {
+            const allCreditsData = await fetchAllCredits();
+            let finalCreditsData = allCreditsData;
+
+            if (userRole === 'Gestor de Cobros') {
+                const routeCreditIds = await fetchRouteCreditIds();
+                if (routeCreditIds.length > 0) {
+                    finalCreditsData = allCreditsData.filter(credit => routeCreditIds.includes(credit.id));
+                } else {
+                    finalCreditsData = []; // No route, no credits
+                }
+            }
+            
+            if (finalCreditsData.length === 0) {
+              setCredits([]);
+              setLoading(false);
+              return;
+            }
+            
+            const clientsRef = collection(db, 'clients');
+            const clientSnapshot = await getDocs(clientsRef);
+            const clientMap = new Map(clientSnapshot.docs.map(c => [c.id, c.data() as Client]));
+
+            const enrichedCredits = finalCreditsData.map(credit => {
+                const client = clientMap.get(credit.clientId);
+                return {
+                    ...credit,
+                    clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
+                };
+            });
+
+            setCredits(enrichedCredits);
+        } catch (error) {
+            console.error("Error fetching credits:", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "No se pudieron cargar los créditos.",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    loadData();
+
+  }, [userRole, currentUser, toast]);
   
   const handleCreditClick = (creditId: string) => {
     router.push(`/credits/${creditId}`);
@@ -201,20 +281,24 @@ export default function CreditsPage() {
                 </ul>
             ) : (
                 <div className="text-center py-10">
-                    <p className="text-muted-foreground">No hay créditos registrados.</p>
+                    <p className="text-muted-foreground">
+                      {userRole === 'Gestor de Cobros' ? 'No tienes créditos asignados para hoy.' : 'No hay créditos registrados.'}
+                    </p>
                 </div>
             )}
         </main>
       )}
 
-      <Link href="/clients">
-        <Button
-            className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
-        >
-            <PlusCircle className="h-7 w-7" />
-            <span className="text-xs mt-1">Agregar</span>
-        </Button>
-      </Link>
+      {userRole === 'Administrador' && (
+        <Link href="/clients">
+          <Button
+              className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+          >
+              <PlusCircle className="h-7 w-7" />
+              <span className="text-xs mt-1">Agregar</span>
+          </Button>
+        </Link>
+      )}
     </div>
   )
 }

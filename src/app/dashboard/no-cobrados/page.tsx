@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, ChevronRight, Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getFirestore, collection, query, where, onSnapshot, getDocs, Timestamp } from "firebase/firestore";
+import { getFirestore, collection, query, where, onSnapshot, getDocs, Timestamp, doc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { app } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
@@ -59,50 +60,103 @@ const getStatusClasses = (credit: PendingCredit) => {
 export default function NoCobradosPage() {
   const [pendingCredits, setPendingCredits] = useState<PendingCredit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const router = useRouter();
 
   useEffect(() => {
+    const auth = getAuth(app);
     const db = getFirestore(app);
-    const creditsRef = collection(db, 'credits');
-    const q = query(creditsRef, where("status", "in", ["Activo", "Vencido"]));
-    setLoading(true);
-
-    const unsubscribe = onSnapshot(q, async (creditSnapshot) => {
-      try {
-        const creditsData = creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<PendingCredit, 'clientName'>));
-
-        if (creditsData.length === 0) {
-            setPendingCredits([]);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            setCurrentUser(user);
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                setUserRole(userDocSnap.data().role);
+            } else {
+                setUserRole(null);
+                setLoading(false);
+            }
+        } else {
+            setCurrentUser(null);
+            setUserRole(null);
             setLoading(false);
-            return;
         }
-
-        const clientsRef = collection(db, 'clients');
-        const clientSnapshot = await getDocs(clientsRef);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
-        const clientMap = new Map(clientList.map(c => [c.id, c]));
-
-        const enrichedCredits = creditsData.map(credit => {
-            const client = clientMap.get(credit.clientId);
-            return {
-                ...credit,
-                clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-            };
-        });
-
-        setPendingCredits(enrichedCredits);
-      } catch(error) {
-        console.error("Error processing pending credits:", error);
-      } finally {
-        setLoading(false);
-      }
-    }, (error) => {
-        console.error("Error fetching pending credits:", error);
-        setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
+
+  useEffect(() => {
+    if (!userRole || !currentUser) {
+        if (!currentUser) setLoading(false);
+        return;
+    }
+
+    setLoading(true);
+    const db = getFirestore(app);
+
+    const fetchPendingCredits = async () => {
+        try {
+            const clientsRef = collection(db, 'clients');
+            const clientSnapshot = await getDocs(clientsRef);
+            const clientMap = new Map(clientSnapshot.docs.map(c => [c.id, c.data() as Client]));
+
+            let creditQuery = query(collection(db, 'credits'), where("status", "in", ["Activo", "Vencido"]));
+            
+            if (userRole === 'Gestor de Cobros') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const routesRef = collection(db, 'routes');
+                const routeQuery = query(routesRef, 
+                    where("collectorId", "==", currentUser.uid),
+                    where("date", ">=", Timestamp.fromDate(today)),
+                    where("date", "<", Timestamp.fromDate(tomorrow))
+                );
+                const routeSnapshot = await getDocs(routeQuery);
+
+                if (!routeSnapshot.empty) {
+                    const routeCreditIds = routeSnapshot.docs[0].data().creditIds as string[];
+                    if(routeCreditIds.length === 0) {
+                        setPendingCredits([]);
+                        setLoading(false);
+                        return;
+                    }
+                    creditQuery = query(collection(db, 'credits'), where("__name__", "in", routeCreditIds), where("status", "in", ["Activo", "Vencido"]));
+                } else {
+                    setPendingCredits([]); // No route assigned for today
+                    setLoading(false);
+                    return;
+                }
+            }
+            
+            const creditSnapshot = await getDocs(creditQuery);
+            const creditsData = creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<PendingCredit, 'clientName'>));
+
+            const enrichedCredits = creditsData.map(credit => {
+                const client = clientMap.get(credit.clientId);
+                return {
+                    ...credit,
+                    clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
+                };
+            });
+
+            setPendingCredits(enrichedCredits);
+
+        } catch(error) {
+            console.error("Error processing pending credits:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchPendingCredits();
+
+  }, [userRole, currentUser]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -131,7 +185,9 @@ export default function NoCobradosPage() {
             </div>
         ) : pendingCredits.length === 0 ? (
             <div className="text-center py-10">
-                <p className="text-muted-foreground">No hay créditos pendientes de cobro.</p>
+                <p className="text-muted-foreground">
+                  {userRole === 'Gestor de Cobros' ? 'No tienes créditos pendientes en tu ruta de hoy.' : 'No hay créditos pendientes de cobro.'}
+                </p>
             </div>
         ) : (
             <ul className="space-y-3">
@@ -141,7 +197,7 @@ export default function NoCobradosPage() {
 
                 return (
                 <li key={credit.id}>
-                    <Link href={`/credits/${credit.id}`} className={`flex items-center p-3 bg-card rounded-lg border-2 ${classes.border} w-full text-left`}>
+                    <Link href={`/credits/${credit.id}/payment`} className={`flex items-center p-3 bg-card rounded-lg border-2 ${classes.border} w-full text-left`}>
                         <Avatar className={`h-10 w-10 text-white mr-4 ${classes.avatar}`}>
                         <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>

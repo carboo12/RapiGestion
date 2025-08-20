@@ -14,8 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { nicaraguaData } from "@/lib/nicaragua-data";
 import { app } from "@/lib/firebase";
-import { getFirestore, collection, getDocs, addDoc, doc, setDoc, query, where, onSnapshot } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, where, Timestamp, getDocs } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Plus, User, MapPin, ChevronRight, Search, SlidersHorizontal, Loader2, UserPlus, Eye } from "lucide-react";
@@ -74,48 +74,101 @@ export default function ClientsPage() {
   });
   const [communities, setCommunities] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
+    const auth = getAuth(app);
     const db = getFirestore(app);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            setCurrentUser(user);
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                setUserRole(userDocSnap.data().role);
+            } else {
+                setUserRole(null);
+            }
+        } else {
+            setCurrentUser(null);
+            setUserRole(null);
+        }
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!userRole || !currentUser) {
+        if (!currentUser) setLoading(false);
+        return;
+    }
+    
     setLoading(true);
+    const db = getFirestore(app);
 
-    const unsubscribeClients = onSnapshot(collection(db, 'clients'), (clientSnapshot) => {
-        const clientsData = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Client, 'activeCreditsCount' | 'paidCreditsCount'>));
+    const loadData = async () => {
+        try {
+            const [clientSnapshot, creditsSnapshot] = await Promise.all([
+                getDocs(collection(db, 'clients')),
+                getDocs(collection(db, 'credits'))
+            ]);
 
-        const creditsRef = collection(db, 'credits');
-        onSnapshot(creditsRef, (creditsSnapshot) => {
-            const creditsData = creditsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Credit));
+            let clientsData = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+            const creditsData = creditsSnapshot.docs.map(doc => doc.data() as Credit);
+
+            if (userRole === 'Gestor de Cobros') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const routesRef = collection(db, 'routes');
+                const routeQuery = query(routesRef, 
+                    where("collectorId", "==", currentUser.uid),
+                    where("date", ">=", Timestamp.fromDate(today)),
+                    where("date", "<", Timestamp.fromDate(tomorrow))
+                );
+                const routeSnapshot = await getDocs(routeQuery);
+                
+                if (!routeSnapshot.empty) {
+                    const routeCreditIds = routeSnapshot.docs[0].data().creditIds as string[];
+                    const routeClientIds = new Set(
+                        creditsData
+                            .filter(c => routeCreditIds.includes(c.id))
+                            .map(c => c.clientId)
+                    );
+                    clientsData = clientsData.filter(client => routeClientIds.has(client.id));
+                } else {
+                    clientsData = []; // No route assigned
+                }
+            }
 
             const clientsWithCreditCounts = clientsData.map(client => {
                 const clientCredits = creditsData.filter(credit => credit.clientId === client.id);
-                const activeCount = clientCredits.filter(c => c.status === 'Activo').length;
-                const paidCount = clientCredits.filter(c => c.status === 'Pagado').length;
                 return {
                     ...client,
-                    activeCreditsCount: activeCount,
-                    paidCreditsCount: paidCount,
+                    activeCreditsCount: clientCredits.filter(c => c.status === 'Activo').length,
+                    paidCreditsCount: clientCredits.filter(c => c.status === 'Pagado').length,
                 };
             });
-            
-            setClients(clientsWithCreditCounts);
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching credits:", error);
-            setLoading(false);
-        });
-    }, (error) => {
-        console.error("Error fetching clients:", error);
-        setLoading(false);
-    });
 
-    return () => {
-        // In a real app, you might need a more sophisticated way to unsubscribe both listeners
-        // For now, this structure assumes the component unmounts and remounts cleanly.
+            setClients(clientsWithCreditCounts);
+        } catch (error) {
+            console.error("Error fetching clients data:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron cargar los clientes.' });
+        } finally {
+            setLoading(false);
+        }
     };
-  }, []);
+    
+    loadData();
+    
+  }, [userRole, currentUser, toast]);
 
   useEffect(() => {
     if (editingClient) {
@@ -350,19 +403,23 @@ export default function ClientsPage() {
                 </ul>
             ) : (
                 <div className="text-center py-10">
-                    <p className="text-muted-foreground">No hay clientes registrados.</p>
+                    <p className="text-muted-foreground">
+                      {userRole === 'Gestor de Cobros' ? 'No tienes clientes en tu ruta de hoy.' : 'No hay clientes registrados.'}
+                    </p>
                 </div>
             )}
         </main>
       )}
 
-      <Button
-        onClick={() => handleOpenDialog(null)}
-        className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
-      >
-        <UserPlus className="h-7 w-7" />
-        <span className="text-xs mt-1">Cliente</span>
-      </Button>
+      {userRole === 'Administrador' && (
+        <Button
+          onClick={() => handleOpenDialog(null)}
+          className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+        >
+          <UserPlus className="h-7 w-7" />
+          <span className="text-xs mt-1">Cliente</span>
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
