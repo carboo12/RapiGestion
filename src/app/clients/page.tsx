@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { nicaraguaData } from "@/lib/nicaragua-data";
 import { app } from "@/lib/firebase";
-import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, where, Timestamp, getDocs } from "firebase/firestore";
+import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, query, where, Timestamp, getDocs, getDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
