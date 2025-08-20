@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Eye, EyeOff, PlusCircle, Edit } from "lucide-react"
+import { Eye, EyeOff, PlusCircle, Edit, Trash2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -27,16 +27,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useEffect, useRef } from "react"
 import { app } from "@/lib/firebase"
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth"
-import { getFirestore, collection, doc, setDoc, onSnapshot, Timestamp, updateDoc } from "firebase/firestore"
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth"
+import { getFirestore, collection, doc, setDoc, onSnapshot, Timestamp, updateDoc, deleteDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { formatDistanceToNow, isToday, isYesterday, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { logAction } from "@/lib/action-logger"
 
 interface User {
   id: string;
@@ -73,6 +86,7 @@ export default function UsersPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const addUserFormRef = useRef<HTMLFormElement>(null);
@@ -102,6 +116,9 @@ export default function UsersPage() {
     setIsEditDialogOpen(true);
   };
 
+  const handleOpenDeleteDialog = (user: User) => {
+    setDeletingUser(user);
+  };
 
   const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -147,6 +164,8 @@ export default function UsersPage() {
         status: 'offline',
         lastSeen: Timestamp.now()
       });
+      
+      await logAction('CREAR USUARIO', `Usuario ${email} creado con rol ${role}`, admin.uid);
 
       // Re-authenticate as admin
       await signInWithEmailAndPassword(auth, admin.email!, adminPass);
@@ -156,9 +175,7 @@ export default function UsersPage() {
         description: "Usuario agregado correctamente.",
       });
 
-      if (addUserFormRef.current) {
-        addUserFormRef.current.reset();
-      }
+      addUserFormRef.current?.reset();
       setIsAddDialogOpen(false);
 
     } catch (error: any) {
@@ -180,6 +197,9 @@ export default function UsersPage() {
   const handleEditUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingUser) return;
+    
+    const auth = getAuth(app);
+    const admin = auth.currentUser;
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
@@ -192,6 +212,10 @@ export default function UsersPage() {
             name,
             role,
         });
+
+        if (admin) {
+            await logAction('ACTUALIZAR USUARIO', `Usuario ${editingUser.email} actualizado. Nuevo rol: ${role}`, admin.uid);
+        }
 
         toast({
             title: "Éxito",
@@ -210,6 +234,44 @@ export default function UsersPage() {
         });
     }
   };
+  
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    
+    const auth = getAuth(app);
+    const admin = auth.currentUser;
+    if (!admin) {
+      toast({ title: "Error", description: "Acción no permitida.", variant: "destructive" });
+      return;
+    }
+
+    try {
+        const db = getFirestore(app);
+        // Deleting from Firestore.
+        await deleteDoc(doc(db, "users", deletingUser.id));
+
+        // Note: Client-side SDK cannot delete other user accounts from Auth.
+        // This requires the Admin SDK in a backend environment.
+        // By deleting the user from Firestore, they lose their role and can't function in the app.
+        // We log this action for manual cleanup in Firebase Console if needed.
+        await logAction('ACTUALIZAR USUARIO', `Usuario ${deletingUser.email} eliminado de la base de datos. Se requiere limpieza manual de Auth.`, admin.uid);
+
+
+        toast({
+            title: "Usuario Eliminado",
+            description: `${deletingUser.name} ha sido eliminado de la base de datos.`,
+        });
+        setDeletingUser(null);
+    } catch(error: any) {
+        console.error("Error deleting user:", error);
+        toast({
+            title: "Error al eliminar",
+            description: "No se pudo eliminar el usuario de la base de datos.",
+            variant: "destructive",
+        });
+    }
+  }
+
 
   return (
     <div className="space-y-6 pb-20">
@@ -263,10 +325,33 @@ export default function UsersPage() {
                       )}
                       </div>
                   </TableCell>
-                   <TableCell>
+                   <TableCell className="flex gap-1">
                       <Button variant="ghost" size="icon" onClick={() => handleOpenEditDialog(user)}>
                         <Edit className="h-4 w-4" />
                       </Button>
+                      <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(user)} disabled={user.role === 'Administrador'}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                              <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Esta acción no se puede deshacer. Esto eliminará permanentemente al usuario
+                                      <span className="font-bold"> {deletingUser?.name} </span>
+                                       de la base de datos.
+                                  </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+                                    Sí, eliminar usuario
+                                  </AlertDialogAction>
+                              </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                 </TableRow>
               ))}
@@ -386,7 +471,7 @@ export default function UsersPage() {
               </div>
             </div>
             <DialogFooter>
-               <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+               <Button variant="ghost" type="button" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
               <Button type="submit">Guardar Cambios</Button>
             </DialogFooter>
           </form>
@@ -396,3 +481,5 @@ export default function UsersPage() {
     </div>
   )
 }
+
+      

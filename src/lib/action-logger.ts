@@ -45,3 +45,5 @@ export const logAction = async (action: ActionType, details: string, userId: str
         // Silently fail to not interrupt user flow
     }
 };
+
+      
