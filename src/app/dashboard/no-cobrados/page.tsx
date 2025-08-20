@@ -89,8 +89,8 @@ export default function NoCobradosPage() {
   }, []);
 
   useEffect(() => {
-    if (!userRole || !currentUser) {
-        if (!currentUser) setLoading(false);
+    if (!currentUser) {
+        if (!userRole) setLoading(false);
         return;
     }
 
@@ -104,35 +104,6 @@ export default function NoCobradosPage() {
             const clientMap = new Map(clientSnapshot.docs.map(c => [c.id, c.data() as Client]));
 
             let creditQuery = query(collection(db, 'credits'), where("status", "in", ["Activo", "Vencido"]));
-            
-            if (userRole === 'Gestor de Cobros') {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-
-                const routesRef = collection(db, 'routes');
-                const routeQuery = query(routesRef, 
-                    where("collectorId", "==", currentUser.uid),
-                    where("date", ">=", Timestamp.fromDate(today)),
-                    where("date", "<", Timestamp.fromDate(tomorrow))
-                );
-                const routeSnapshot = await getDocs(routeQuery);
-
-                if (!routeSnapshot.empty) {
-                    const routeCreditIds = routeSnapshot.docs[0].data().creditIds as string[];
-                    if(routeCreditIds.length === 0) {
-                        setPendingCredits([]);
-                        setLoading(false);
-                        return;
-                    }
-                    creditQuery = query(collection(db, 'credits'), where("__name__", "in", routeCreditIds), where("status", "in", ["Activo", "Vencido"]));
-                } else {
-                    setPendingCredits([]); // No route assigned for today
-                    setLoading(false);
-                    return;
-                }
-            }
             
             const creditSnapshot = await getDocs(creditQuery);
             const creditsData = creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<PendingCredit, 'clientName'>));

@@ -164,58 +164,18 @@ export default function CreditsPage() {
   }, []);
 
   useEffect(() => {
-    if (!userRole || !currentUser) {
-        if(!currentUser && !userRole) setLoading(false);
+    if (!currentUser) {
+        if(!userRole) setLoading(false);
         return;
     }
 
     setLoading(true);
     const db = getFirestore(app);
 
-    const fetchAllCredits = async () => {
-        const creditsRef = collection(db, 'credits');
-        const creditSnapshot = await getDocs(creditsRef);
-        return creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Credit, 'clientName'>));
-    };
-
-    const fetchRouteCreditIds = async () => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const routesRef = collection(db, 'routes');
-        const q = query(routesRef, 
-            where("collectorId", "==", currentUser.uid),
-            where("date", ">=", Timestamp.fromDate(today)),
-            where("date", "<", Timestamp.fromDate(tomorrow))
-        );
-        const routeSnapshot = await getDocs(q);
-        if (!routeSnapshot.empty) {
-            return routeSnapshot.docs[0].data().creditIds as string[];
-        }
-        return [];
-    };
-
     const loadData = async () => {
         try {
-            const allCreditsData = await fetchAllCredits();
-            let finalCreditsData = allCreditsData;
-
-            if (userRole === 'Gestor de Cobros') {
-                const routeCreditIds = await fetchRouteCreditIds();
-                if (routeCreditIds.length > 0) {
-                    finalCreditsData = allCreditsData.filter(credit => routeCreditIds.includes(credit.id));
-                } else {
-                    finalCreditsData = []; // No route, no credits
-                }
-            }
-            
-            if (finalCreditsData.length === 0) {
-              setCredits([]);
-              setLoading(false);
-              return;
-            }
+            const allCreditsData = await getDocs(collection(db, 'credits'));
+            let finalCreditsData = allCreditsData.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Credit, 'clientName'>));
             
             const clientsRef = collection(db, 'clients');
             const clientSnapshot = await getDocs(clientsRef);

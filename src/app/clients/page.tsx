@@ -103,8 +103,8 @@ export default function ClientsPage() {
   }, []);
 
   useEffect(() => {
-    if (!userRole || !currentUser) {
-        if (!currentUser) setLoading(false);
+    if (!currentUser) {
+        setLoading(false);
         return;
     }
     
@@ -120,33 +120,6 @@ export default function ClientsPage() {
 
             let clientsData = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
             const creditsData = creditsSnapshot.docs.map(doc => doc.data() as Credit);
-
-            if (userRole === 'Gestor de Cobros') {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-
-                const routesRef = collection(db, 'routes');
-                const routeQuery = query(routesRef, 
-                    where("collectorId", "==", currentUser.uid),
-                    where("date", ">=", Timestamp.fromDate(today)),
-                    where("date", "<", Timestamp.fromDate(tomorrow))
-                );
-                const routeSnapshot = await getDocs(routeQuery);
-                
-                if (!routeSnapshot.empty) {
-                    const routeCreditIds = routeSnapshot.docs[0].data().creditIds as string[];
-                    const routeClientIds = new Set(
-                        creditsData
-                            .filter(c => routeCreditIds.includes(c.id))
-                            .map(c => c.clientId)
-                    );
-                    clientsData = clientsData.filter(client => routeClientIds.has(client.id));
-                } else {
-                    clientsData = []; // No route assigned
-                }
-            }
 
             const clientsWithCreditCounts = clientsData.map(client => {
                 const clientCredits = creditsData.filter(credit => credit.clientId === client.id);
@@ -168,7 +141,7 @@ export default function ClientsPage() {
     
     loadData();
     
-  }, [userRole, currentUser, toast]);
+  }, [currentUser, toast]);
 
   useEffect(() => {
     if (editingClient) {

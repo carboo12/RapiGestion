@@ -66,14 +66,12 @@ export default function RoutesPage() {
   }, []);
 
   useEffect(() => {
-    if (!userRole || !currentUser) {
-        if (!currentUser) setLoading(false); // Ensure loading is false if there's no user
+    if (!currentUser) {
+        if (!userRole) setLoading(false); // Ensure loading is false if there's no user
         return;
     }
 
     const db = getFirestore(app);
-    const routesRef = collection(db, 'routes');
-    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -84,16 +82,17 @@ export default function RoutesPage() {
 
     let q;
     if (userRole === 'Administrador') {
-        q = query(routesRef, 
+        q = query(collection(db, 'routes'), 
             where('date', '>=', todayTimestamp),
             where('date', '<', tomorrowTimestamp));
     } else if (userRole === 'Gestor de Cobros') {
-        q = query(routesRef, 
+        q = query(collection(db, 'routes'), 
             where('collectorId', '==', currentUser.uid),
             where('date', '>=', todayTimestamp),
             where('date', '<', tomorrowTimestamp));
     } else {
         setLoading(false);
+        setRoutes([]);
         return;
     }
     
@@ -102,8 +101,7 @@ export default function RoutesPage() {
       try {
         const usersRef = collection(db, 'users');
         const usersSnapshot = await getDocs(usersRef);
-        const usersList = usersSnapshot.docs.map(d => ({id: d.id, ...d.data() as User}));
-        const userMap = new Map(usersList.map(u => [u.id, u]));
+        const userMap = new Map(usersSnapshot.docs.map(d => [d.id, d.data() as User]));
 
         const routesList = snapshot.docs.map(d => {
           const routeData = d.data();

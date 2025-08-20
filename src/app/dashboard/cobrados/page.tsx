@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, ChevronRight, Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { getFirestore, collection, onSnapshot, getDocs, Timestamp } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot, getDocs, Timestamp, query, where } from "firebase/firestore";
 import { app } from "@/lib/firebase";
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 
 interface Client {
     id: string;
@@ -21,41 +22,75 @@ interface Payment {
   clientName: string;
   amount: number;
   paymentDate: Timestamp;
+  gestorId?: string;
 }
 
 export default function CobradosPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
+    const auth = getAuth(app);
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+        setCurrentUser(user);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+        setLoading(false);
+        return;
+    }
     const db = getFirestore(app);
     setLoading(true);
 
-    const unsubscribePayments = onSnapshot(collection(db, 'payments'), async (paymentSnapshot) => {
-        const paymentsData = paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Payment, 'clientName'>));
+    const loadData = async () => {
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
 
-        const clientsRef = collection(db, 'clients');
-        const clientSnapshot = await getDocs(clientsRef);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
-        const clientMap = new Map(clientList.map(c => [c.id, c]));
+            const q = query(collection(db, 'payments'),
+                where("gestorId", "==", currentUser.uid),
+                where("paymentDate", ">=", Timestamp.fromDate(today)),
+                where("paymentDate", "<", Timestamp.fromDate(tomorrow))
+            );
+            
+            const paymentSnapshot = await getDocs(q);
+            const paymentsData = paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Payment, 'clientName'>));
 
-        const enrichedPayments = paymentsData.map(payment => {
-            const client = clientMap.get(payment.clientId);
-            return {
-                ...payment,
-                clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-            };
-        });
+            if (paymentsData.length === 0) {
+                setPayments([]);
+                setLoading(false);
+                return;
+            }
 
-        setPayments(enrichedPayments);
-        setLoading(false);
-    }, (error) => {
-        console.error("Error fetching payments:", error);
-        setLoading(false);
-    });
+            const clientsRef = collection(db, 'clients');
+            const clientSnapshot = await getDocs(clientsRef);
+            const clientMap = new Map(clientSnapshot.docs.map(c => [c.id, c.data() as Client]));
 
-    return () => unsubscribePayments();
-  }, []);
+            const enrichedPayments = paymentsData.map(payment => {
+                const client = clientMap.get(payment.clientId);
+                return {
+                    ...payment,
+                    clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
+                };
+            });
+
+            setPayments(enrichedPayments);
+        } catch(error) {
+            console.error("Error fetching payments:", error);
+        } finally {
+            setLoading(false);
+        }
+    }
+    
+    loadData();
+
+  }, [currentUser]);
 
 
   return (
@@ -66,7 +101,7 @@ export default function CobradosPage() {
             <ArrowLeft className="h-6 w-6" />
           </Button>
         </Link>
-        <h1 className="text-lg font-semibold text-primary">Cuotas Aplicadas</h1>
+        <h1 className="text-lg font-semibold text-primary">Cuotas Aplicadas Hoy</h1>
         <div className="w-10"></div>
       </header>
 
@@ -87,7 +122,7 @@ export default function CobradosPage() {
             </div>
         ) : payments.length === 0 ? (
             <div className="text-center py-10">
-                <p className="text-muted-foreground">No se han registrado cobros.</p>
+                <p className="text-muted-foreground">No has registrado cobros hoy.</p>
             </div>
         ) : (
             <ul className="space-y-3">
