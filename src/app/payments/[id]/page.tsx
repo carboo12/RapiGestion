@@ -126,13 +126,18 @@ export default function ReceiptPage() {
   const [credit, setCredit] = useState<Credit | null>(null);
   const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAndroid, setIsAndroid] = useState(false);
   
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
   const componentRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    setIsAndroid(/android/i.test(navigator.userAgent));
+  }, []);
 
-  const handlePrint = async () => {
+  const handlePrintPdf = async () => {
     const input = componentRef.current;
     if (input) {
       try {
@@ -164,7 +169,7 @@ export default function ReceiptPage() {
     }
   };
 
-  const handleShare = async () => {
+  const handleSharePdf = async () => {
     const input = componentRef.current;
     if (!input) return;
 
@@ -198,6 +203,58 @@ export default function ReceiptPage() {
         }
     } catch (error) {
         console.error('Error al compartir el PDF:', error);
+        alert("Hubo un error al intentar compartir el recibo. Por favor, inténtalo de nuevo.");
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    const input = componentRef.current;
+    if (!input) return;
+
+    try {
+      const canvas = await html2canvas(input, { scale: 3 });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      const clientFullName = [client?.primerNombre, client?.apellido].filter(Boolean).join(' ');
+      link.download = `Recibo-${clientFullName.replace(/\s+/g, '-') || 'pago'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch(e) {
+      console.error('Error downloading image', e);
+      alert("Hubo un error al descargar la imagen");
+    }
+  }
+  
+  const handleShareImage = async () => {
+    const input = componentRef.current;
+    if (!input) return;
+    
+    try {
+        const canvas = await html2canvas(input, { scale: 3 });
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                alert('No se pudo generar la imagen para compartir.');
+                return;
+            }
+
+            const clientFullName = [client?.primerNombre, client?.apellido].filter(Boolean).join(' ');
+            const fileName = `Recibo-${clientFullName.replace(/\s+/g, '-') || 'pago'}.png`;
+            const file = new File([blob], fileName, { type: 'image/png' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: `Recibo de Abono - ${companySettings?.companyName || 'RapiGestion'}`,
+                    text: `Adjunto el recibo de abono para ${clientFullName}.`,
+                });
+            } else {
+                alert("Tu navegador no soporta la función de compartir archivos.");
+            }
+        }, 'image/png');
+    } catch (error) {
+        console.error('Error sharing image:', error);
         alert("Hubo un error al intentar compartir el recibo. Por favor, inténtalo de nuevo.");
     }
   };
@@ -328,10 +385,10 @@ export default function ReceiptPage() {
         </div>
 
         <div className="fixed bottom-20 right-4 z-20 flex gap-3">
-            <Button onClick={handlePrint} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
+            <Button onClick={isAndroid ? handleDownloadImage : handlePrintPdf} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
                 <Printer className="h-7 w-7" />
             </Button>
-            <Button onClick={handleShare} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-blue-500 text-blue-500 bg-white shadow-lg">
+            <Button onClick={isAndroid ? handleShareImage : handleSharePdf} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-blue-500 text-blue-500 bg-white shadow-lg">
                 <Share2 className="h-7 w-7" />
             </Button>
             <Button onClick={handleAnotherPayment} variant="outline" className="h-14 w-14 p-0 flex-shrink-0 rounded-full border-2 border-green-500 text-green-600 bg-white shadow-lg">
