@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useState, useRef, forwardRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -61,7 +62,7 @@ const ReceiptContent = forwardRef<HTMLDivElement, any>(({ payment, client, credi
         <div id="receipt-content" ref={ref} className="bg-white p-4 rounded-lg shadow-md font-sans text-black max-w-[302px] mx-auto">
             <div className="text-center mb-4">
                 <div className="flex justify-center items-center mb-2">
-                    <Logo className="w-20 h-20 text-primary" />
+                    <Logo className="w-16 h-16 text-primary" />
                 </div>
                 <h2 className="text-xl font-bold text-blue-600">{companySettings?.companyName || 'RapiGestion'}</h2>
                 {companySettings?.slogan && <p className="text-sm">{companySettings.slogan}</p>}
@@ -399,3 +400,5 @@ export default function ReceiptPage() {
     </>
   );
 }
+
+    
