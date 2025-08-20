@@ -17,35 +17,62 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getFirestore, collection, onSnapshot, query, orderBy, Timestamp } from "firebase/firestore";
+import { app } from "@/lib/firebase";
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-const actionLogs = [
-  { id: 1, user: 'admin@rapigestion.com', action: 'INICIO_SESION', details: 'El usuario inició sesión exitosamente.', timestamp: '2024-07-29 10:00:15', role: 'Administrador' },
-  { id: 2, user: 'carlos.r@rapigestion.com', action: 'CREAR_CLIENTE', details: 'Cliente "Alice Johnson" (CUST-001) creado.', timestamp: '2024-07-29 10:05:22', role: 'Gestor de Cobros' },
-  { id: 3, user: 'admin@rapigestion.com', action: 'CREAR_USUARIO', details: 'Usuario "john.d@rapigestion.com" creado con rol "Usuario de Desembolsos".', timestamp: '2024-07-29 10:15:03', role: 'Administrador' },
-  { id: 4, user: 'carlos.r@rapigestion.com', action: 'REGISTRAR_PAGO', details: 'Pago de C$ 500 registrado para crédito CR-002.', timestamp: '2024-07-29 10:20:45', role: 'Gestor de Cobros' },
-  { id: 5, user: 'maria.s@rapigestion.com', action: 'ACTUALIZAR_CLIENTE', details: 'Dirección actualizada para cliente "Robert Brown" (CUST-002).', timestamp: '2024-07-29 10:30:11', role: 'Gestor de Cobros' },
-  { id: 6, user: 'john.d@rapigestion.com', action: 'CREAR_CREDITO', details: 'Nuevo crédito (CR-006) por C$15,000 creado para cliente "Nuevo Cliente".', timestamp: '2024-07-29 11:00:59', role: 'Usuario de Desembolsos' },
-  { id: 7, user: 'admin@rapigestion.com', action: 'CERRAR_SESION', details: 'El usuario cerró sesión.', timestamp: '2024-07-29 11:05:00', role: 'Administrador' },
-];
-
-const getActionBadgeVariant = (action: string) => {
-  if (action.includes('CREAR')) return 'default';
-  if (action.includes('ACTUALIZAR')) return 'secondary';
-  if (action.includes('INICIO') || action.includes('CERRAR')) return 'outline';
-  if (action.includes('PAGO')) return 'default';
-  return 'secondary';
-};
+interface ActionLog {
+  id: string;
+  user: string;
+  action: string;
+  details: string;
+  timestamp: Timestamp;
+  role: string;
+}
 
 const getActionBadgeClass = (action: string) => {
   if (action.includes('CREAR')) return 'bg-sky-100 text-sky-800';
   if (action.includes('ACTUALIZAR')) return 'bg-amber-100 text-amber-800';
-  if (action.includes('INICIO') || action.includes('CERRAR')) return 'bg-slate-100 text-slate-800';
+  if (action.includes('INICIO')) return 'bg-slate-100 text-slate-800';
+  if (action.includes('CERRAR')) return 'bg-slate-100 text-slate-800';
   if (action.includes('PAGO')) return 'bg-emerald-100 text-emerald-800';
+  if (action.includes('ABONO')) return 'bg-emerald-100 text-emerald-800';
   return 'bg-gray-100 text-gray-800';
 }
 
 export default function ActionsPage() {
+  const [logs, setLogs] = useState<ActionLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const db = getFirestore(app);
+    const logsCollection = collection(db, 'action_logs');
+    const q = query(logsCollection, orderBy('timestamp', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActionLog));
+      setLogs(logsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching action logs:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const formatTimestamp = (timestamp: Timestamp) => {
+    if (!timestamp) return 'N/A';
+    try {
+      return format(timestamp.toDate(), "dd/MM/yyyy, h:mm:ss a", { locale: es });
+    } catch (e) {
+      return 'Fecha inválida';
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -84,35 +111,41 @@ export default function ActionsPage() {
           <CardTitle>Log de Actividades del Sistema</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Acción</TableHead>
-                <TableHead>Detalles</TableHead>
-                <TableHead>Fecha y Hora</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {actionLogs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                        <span>{log.user}</span>
-                        <span className="text-xs text-muted-foreground">{log.role}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getActionBadgeVariant(log.action)} className={getActionBadgeClass(log.action)}>
-                      {log.action}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{log.details}</TableCell>
-                  <TableCell>{log.timestamp}</TableCell>
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Acción</TableHead>
+                  <TableHead>Detalles</TableHead>
+                  <TableHead>Fecha y Hora</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {logs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                          <span>{log.user}</span>
+                          <span className="text-xs text-muted-foreground">{log.role}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getActionBadgeClass(log.action)}>
+                        {log.action}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{log.details}</TableCell>
+                    <TableCell>{formatTimestamp(log.timestamp)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
