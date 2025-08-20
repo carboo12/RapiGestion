@@ -84,11 +84,10 @@ export default function DashboardPage() {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const todayTimestamp = Timestamp.fromDate(todayStart);
-
     let paymentsQuery;
     
     if (userRole === 'Administrador') {
+      const todayTimestamp = Timestamp.fromDate(todayStart);
       paymentsQuery = query(
         collection(db, "payments"),
         where("paymentDate", ">=", todayTimestamp)
