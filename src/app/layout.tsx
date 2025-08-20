@@ -54,6 +54,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
+      
+      // Request notification permission
+      if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+      }
+
 
       return () => {
         window.removeEventListener('online', handleOnline);
@@ -103,20 +109,55 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         const userDocRef = doc(db, "users", user.uid);
         
         const userDocSnap = await getDoc(userDocRef);
+        let currentRole = null;
         if (userDocSnap.exists()) {
-            setUserRole(userDocSnap.data().role);
+            currentRole = userDocSnap.data().role;
+            setUserRole(currentRole);
             await updateDoc(userDocRef, { status: 'online', lastSeen: serverTimestamp() });
         } else {
-          // This might happen if the user record is not created yet
           setUserRole(null);
         }
 
-        if (userRole === 'Administrador') {
-            const notificationsQuery = query(collection(db, `users/${user.uid}/notifications`), where('read', '==', false));
+        const isFirstLoadForUser: { [key: string]: boolean } = {};
+
+        if (currentRole) {
+            const notificationsQuery = query(
+              collection(db, `users/${user.uid}/notifications`),
+              where('read', '==', false)
+            );
+
+            if (!isFirstLoadForUser[user.uid]) {
+                isFirstLoadForUser[user.uid] = true;
+            }
+            
             const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-              const newNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-              setNotifications(newNotifications);
-              setUnreadCount(newNotifications.length);
+              const newNotifications: Notification[] = [];
+              snapshot.docChanges().forEach((change) => {
+                if(change.type === 'added') {
+                    const notificationData = { id: change.doc.id, ...change.doc.data() } as Notification;
+                    newNotifications.push(notificationData);
+
+                    // Show native notification if permission is granted
+                    if (!isFirstLoadForUser[user.uid] && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification(notificationData.title, {
+                            body: notificationData.description,
+                            icon: '/logo1.svg',
+                            vibrate: [200, 100, 200], // Vibrate pattern
+                        });
+                    }
+                }
+              });
+
+              if (newNotifications.length > 0) {
+                 setNotifications(prev => [...newNotifications, ...prev].sort((a,b) => b.createdAt.seconds - a.createdAt.seconds));
+              }
+
+              setUnreadCount(snapshot.size);
+
+              // After first fetch, subsequent notifications are new
+              if(isFirstLoadForUser[user.uid]) {
+                setTimeout(() => { isFirstLoadForUser[user.uid] = false }, 2000);
+              }
             });
             // In a real app, you would manage this unsubscribe
         }
@@ -131,7 +172,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router, userRole]);
+  }, [router]);
 
   useEffect(() => {
     if (!user) return;
@@ -220,7 +261,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                     
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 relative" disabled={userRole !== 'Administrador'}>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 relative" disabled={userRole !== 'Administrador' && userRole !== 'Gestor de Cobros'}>
                                 <Bell className="h-5 w-5" />
                                 {unreadCount > 0 && (
                                     <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">{unreadCount}</Badge>
@@ -310,3 +351,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    
