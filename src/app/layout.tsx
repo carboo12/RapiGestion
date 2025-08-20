@@ -15,7 +15,7 @@ import Image from 'next/image';
 import { Logo } from '@/components/logo';
 import { Bell, MapPinned } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, updateDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import './globals.css';
@@ -123,7 +123,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         if (currentRole) {
             const notificationsQuery = query(
               collection(db, `users/${user.uid}/notifications`),
-              where('read', '==', false)
+              orderBy('createdAt', 'desc'),
+              limit(10) // Limit to last 10 notifications for performance
             );
 
             if (!isFirstLoadForUser[user.uid]) {
@@ -131,35 +132,38 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             }
             
             const unsubscribeNotifications = onSnapshot(notificationsQuery, (snapshot) => {
-              const newNotifications: Notification[] = [];
-              snapshot.docChanges().forEach((change) => {
-                if(change.type === 'added') {
-                    const notificationData = { id: change.doc.id, ...change.doc.data() } as Notification;
-                    newNotifications.push(notificationData);
+              const currentNotifications: Notification[] = [];
+              let currentUnreadCount = 0;
 
-                    // Show native notification if permission is granted
-                    if (!isFirstLoadForUser[user.uid] && 'Notification' in window && Notification.permission === 'granted') {
+              snapshot.forEach(doc => {
+                  const notificationData = { id: doc.id, ...doc.data() } as Notification;
+                  currentNotifications.push(notificationData);
+                  if (!notificationData.read) {
+                      currentUnreadCount++;
+                  }
+              });
+              
+              setNotifications(currentNotifications);
+              setUnreadCount(currentUnreadCount);
+
+              // Handle new notifications for native display
+              snapshot.docChanges().forEach((change) => {
+                if(change.type === 'added' && !isFirstLoadForUser[user.uid]) {
+                    const notificationData = change.doc.data() as Notification;
+                     if ('Notification' in window && Notification.permission === 'granted') {
                         new Notification(notificationData.title, {
                             body: notificationData.description,
                             icon: '/logo1.svg',
-                            vibrate: [200, 100, 200], // Vibrate pattern
+                            vibrate: [200, 100, 200],
                         });
                     }
                 }
               });
-
-              if (newNotifications.length > 0) {
-                 setNotifications(prev => [...newNotifications, ...prev].sort((a,b) => b.createdAt.seconds - a.createdAt.seconds));
-              }
-
-              setUnreadCount(snapshot.size);
-
-              // After first fetch, subsequent notifications are new
+              
               if(isFirstLoadForUser[user.uid]) {
                 setTimeout(() => { isFirstLoadForUser[user.uid] = false }, 2000);
               }
             });
-            // In a real app, you would manage this unsubscribe
         }
         
         setLoading(false);
@@ -225,11 +229,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleNotificationClick = async (notification: Notification) => {
       const db = getFirestore(app);
-      if (user) {
+      if (user && !notification.read) {
           const notifDocRef = doc(db, `users/${user.uid}/notifications`, notification.id);
           await updateDoc(notifDocRef, { read: true });
-          router.push(notification.link);
       }
+      router.push(notification.link);
   }
 
   if (loading) {
@@ -277,14 +281,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                              {notifications.length > 0 ? (
                                 <div className="max-h-80 overflow-y-auto">
                                     {notifications.map(notif => (
-                                        <button key={notif.id} onClick={() => handleNotificationClick(notif)} className="w-full text-left p-4 hover:bg-accent transition-colors border-b">
+                                        <button key={notif.id} onClick={() => handleNotificationClick(notif)} className={`w-full text-left p-4 hover:bg-accent transition-colors border-b ${!notif.read ? 'font-bold' : 'font-normal text-muted-foreground'}`}>
                                             <div className="flex items-start gap-3">
-                                               <div className="bg-blue-100 text-blue-600 rounded-full p-2">
-                                                    <MapPinned className="h-5 w-5"/>
+                                               <div className={`rounded-full p-2 ${!notif.read ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                                                    <MapPinned className={`h-5 w-5 ${!notif.read ? 'text-blue-600' : 'text-gray-500'}`}/>
                                                </div>
                                                <div>
-                                                    <p className="font-semibold text-sm">{notif.title}</p>
-                                                    <p className="text-xs text-muted-foreground">{notif.description}</p>
+                                                    <p className="text-sm">{notif.title}</p>
+                                                    <p className="text-xs">{notif.description}</p>
                                                </div>
                                             </div>
                                         </button>
@@ -351,5 +355,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
