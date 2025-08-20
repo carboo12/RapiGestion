@@ -177,7 +177,7 @@ export default function PaymentsListPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-16">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Historial de Pagos</h2>
         <p className="text-muted-foreground">
