@@ -80,11 +80,6 @@
   }
   body {
     @apply bg-background text-foreground font-body antialiased;
-    scrollbar-width: none;    /* Oculta en Firefox */
-    -ms-overflow-style: none; /* Oculta en IE y Edge antiguos */
-  }
-  body::-webkit-scrollbar {
-    display: none; /* Ocultar en Chrome, Safari, Edge */
   }
 }
 
@@ -95,6 +90,19 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  [data-radix-scroll-area-viewport]::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar,
+  body,
+  [data-radix-scroll-area-viewport] {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 }
 
