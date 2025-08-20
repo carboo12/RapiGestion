@@ -74,7 +74,7 @@ export default function ActionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Registro de Acciones</h2>
         <p className="text-muted-foreground">
@@ -98,10 +98,6 @@ export default function ActionsPage() {
                     <span className="text-muted-foreground">-</span>
                     <Input type="date" />
                 </div>
-                <Button>
-                    <SlidersHorizontal className="mr-2 h-4 w-4"/>
-                    Aplicar Filtros
-                </Button>
             </div>
         </CardContent>
       </Card>
@@ -116,38 +112,47 @@ export default function ActionsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Acción</TableHead>
-                  <TableHead>Detalles</TableHead>
-                  <TableHead>Fecha y Hora</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col">
-                          <span>{log.user}</span>
-                          <span className="text-xs text-muted-foreground">{log.role}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getActionBadgeClass(log.action)}>
-                        {log.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{log.details}</TableCell>
-                    <TableCell>{formatTimestamp(log.timestamp)}</TableCell>
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuario</TableHead>
+                    <TableHead>Acción</TableHead>
+                    <TableHead>Detalles</TableHead>
+                    <TableHead>Fecha y Hora</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col">
+                            <span>{log.user}</span>
+                            <span className="text-xs text-muted-foreground">{log.role}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getActionBadgeClass(log.action)}>
+                          {log.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{log.details}</TableCell>
+                      <TableCell>{formatTimestamp(log.timestamp)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      <Button
+        className="fixed bottom-20 right-4 h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-lg text-white flex flex-col items-center justify-center p-0 leading-tight"
+      >
+        <SlidersHorizontal className="h-7 w-7" />
+        <span className="text-xs mt-1">Filtrar</span>
+      </Button>
     </div>
   )
 }
