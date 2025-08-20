@@ -54,13 +54,18 @@ export default function CobradosPage() {
             tomorrow.setDate(tomorrow.getDate() + 1);
 
             const q = query(collection(db, 'payments'),
-                where("gestorId", "==", currentUser.uid),
-                where("paymentDate", ">=", Timestamp.fromDate(today)),
-                where("paymentDate", "<", Timestamp.fromDate(tomorrow))
+                where("gestorId", "==", currentUser.uid)
             );
             
             const paymentSnapshot = await getDocs(q);
-            const paymentsData = paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Payment, 'clientName'>));
+            // Filter payments for today in the client
+            const paymentsData = paymentSnapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() } as Omit<Payment, 'clientName'>))
+              .filter(p => {
+                  const paymentDate = p.paymentDate.toDate();
+                  return paymentDate >= today && paymentDate < tomorrow;
+              });
+
 
             if (paymentsData.length === 0) {
                 setPayments([]);
