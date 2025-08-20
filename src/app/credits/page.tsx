@@ -13,6 +13,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 
+interface Client {
+    id: string;
+    primerNombre: string;
+    apellido: string;
+}
+
 interface Credit {
   id: string;
   clientId: string;
@@ -127,24 +133,25 @@ export default function CreditsPage() {
 
   useEffect(() => {
     const db = getFirestore(app);
-    const creditsCol = collection(db, 'credits');
     setLoading(true);
 
-    const unsubscribe = onSnapshot(creditsCol, async (creditSnapshot) => {
-        const clientsCol = collection(db, 'clients');
-        const clientSnapshot = await getDocs(clientsCol);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const unsubscribeCredits = onSnapshot(collection(db, 'credits'), async (creditSnapshot) => {
+        const creditsData = creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Credit, 'clientName'>));
 
-        const creditList = creditSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const client = clientList.find(c => c.id === data.clientId);
+        const clientsRef = collection(db, 'clients');
+        const clientSnapshot = await getDocs(clientsRef);
+        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+        const clientMap = new Map(clientList.map(c => [c.id, c]));
+
+        const enrichedCredits = creditsData.map(credit => {
+            const client = clientMap.get(credit.clientId);
             return {
-                id: doc.id,
-                ...data,
+                ...credit,
                 clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-            } as Credit;
+            };
         });
-        setCredits(creditList);
+
+        setCredits(enrichedCredits);
         setLoading(false);
     }, (error) => {
         console.error("Error fetching credits:", error);
@@ -156,7 +163,7 @@ export default function CreditsPage() {
         setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeCredits();
   }, [toast]);
   
   const handleCreditClick = (creditId: string) => {

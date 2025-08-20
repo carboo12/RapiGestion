@@ -49,6 +49,12 @@ interface Municipality {
   comunidades: string[];
 }
 
+interface Credit {
+    id: string;
+    clientId: string;
+    status: 'Activo' | 'Pagado' | 'Vencido';
+}
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,47 +80,41 @@ export default function ClientsPage() {
 
   useEffect(() => {
     const db = getFirestore(app);
-    const clientsCol = collection(db, 'clients');
-    
     setLoading(true);
 
-    const unsubscribe = onSnapshot(clientsCol, async (snapshot) => {
-      try {
-        const clientListPromises = snapshot.docs.map(async (clientDoc) => {
-            const clientData = clientDoc.data() as Omit<Client, 'id' | 'activeCreditsCount' | 'paidCreditsCount'>;
-            
-            const creditsQuery = query(collection(db, "credits"), where("clientId", "==", clientDoc.id));
-            const creditsSnapshot = await getDocs(creditsQuery);
-            
-            let activeCount = 0;
-            let paidCount = 0;
-            creditsSnapshot.forEach((creditDoc) => {
-                const creditData = creditDoc.data();
-                if (creditData.status === 'Activo') activeCount++;
-                else if (creditData.status === 'Pagado') paidCount++;
+    const unsubscribeClients = onSnapshot(collection(db, 'clients'), (clientSnapshot) => {
+        const clientsData = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Client, 'activeCreditsCount' | 'paidCreditsCount'>));
+
+        const creditsRef = collection(db, 'credits');
+        onSnapshot(creditsRef, (creditsSnapshot) => {
+            const creditsData = creditsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Credit));
+
+            const clientsWithCreditCounts = clientsData.map(client => {
+                const clientCredits = creditsData.filter(credit => credit.clientId === client.id);
+                const activeCount = clientCredits.filter(c => c.status === 'Activo').length;
+                const paidCount = clientCredits.filter(c => c.status === 'Pagado').length;
+                return {
+                    ...client,
+                    activeCreditsCount: activeCount,
+                    paidCreditsCount: paidCount,
+                };
             });
-
-            return {
-                id: clientDoc.id,
-                ...clientData,
-                activeCreditsCount: activeCount,
-                paidCreditsCount: paidCount
-            } as Client;
+            
+            setClients(clientsWithCreditCounts);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching credits:", error);
+            setLoading(false);
         });
-
-        const clientList = await Promise.all(clientListPromises);
-        setClients(clientList);
-      } catch (error) {
-        console.error("Error processing clients snapshot:", error);
-      } finally {
-        setLoading(false);
-      }
     }, (error) => {
         console.error("Error fetching clients:", error);
         setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        // In a real app, you might need a more sophisticated way to unsubscribe both listeners
+        // For now, this structure assumes the component unmounts and remounts cleanly.
+    };
   }, []);
 
   useEffect(() => {

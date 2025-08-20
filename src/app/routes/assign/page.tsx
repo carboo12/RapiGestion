@@ -22,12 +22,19 @@ interface User {
   role: string;
 }
 
+interface Client {
+    id: string;
+    primerNombre: string;
+    apellido: string;
+    direccion: string;
+}
+
 interface Credit {
   id: string;
   clientName: string;
   clientId: string;
-  clientAddress: string; // Assuming client has an address property
-  amountToPay: number; // Assuming this is the installment amount
+  clientAddress: string;
+  amountToPay: number;
 }
 
 export default function AssignRoutePage() {
@@ -59,14 +66,16 @@ export default function AssignRoutePage() {
         const creditsRef = collection(db, 'credits');
         const qCredits = query(creditsRef, where("status", "in", ["Activo", "Vencido"]));
         const creditSnapshot = await getDocs(qCredits);
+        const creditsData = creditSnapshot.docs.map(doc => doc.data());
 
         const clientsRef = collection(db, 'clients');
         const clientSnapshot = await getDocs(clientsRef);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+        const clientMap = new Map(clientList.map(c => [c.id, c]));
 
         const creditList = creditSnapshot.docs.map(doc => {
             const data = doc.data();
-            const client = clientList.find(c => c.id === data.clientId);
+            const client = clientMap.get(data.clientId);
             return {
                 id: doc.id,
                 clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',

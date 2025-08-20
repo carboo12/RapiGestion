@@ -9,8 +9,15 @@ import { getFirestore, collection, query, where, onSnapshot, getDocs, Timestamp 
 import { app } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
+interface Client {
+    id: string;
+    primerNombre: string;
+    apellido: string;
+}
+
 interface PendingCredit {
   id: string;
+  clientId: string;
   clientName: string;
   balance: number;
   status: 'Activo' | 'Vencido';
@@ -62,22 +69,28 @@ export default function NoCobradosPage() {
 
     const unsubscribe = onSnapshot(q, async (creditSnapshot) => {
       try {
-        const clientsCol = collection(db, 'clients');
-        const clientSnapshot = await getDocs(clientsCol);
-        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const creditsData = creditSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<PendingCredit, 'clientName'>));
 
-        const creditList = creditSnapshot.docs.map(doc => {
-            const data = doc.data();
-            const client = clientList.find(c => c.id === data.clientId);
+        if (creditsData.length === 0) {
+            setPendingCredits([]);
+            setLoading(false);
+            return;
+        }
+
+        const clientsRef = collection(db, 'clients');
+        const clientSnapshot = await getDocs(clientsRef);
+        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+        const clientMap = new Map(clientList.map(c => [c.id, c]));
+
+        const enrichedCredits = creditsData.map(credit => {
+            const client = clientMap.get(credit.clientId);
             return {
-                id: doc.id,
+                ...credit,
                 clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-                balance: data.balance,
-                status: data.status,
-                firstPaymentDate: data.firstPaymentDate,
-            } as PendingCredit;
+            };
         });
-        setPendingCredits(creditList);
+
+        setPendingCredits(enrichedCredits);
       } catch(error) {
         console.error("Error processing pending credits:", error);
       } finally {

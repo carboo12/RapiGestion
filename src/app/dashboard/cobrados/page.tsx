@@ -8,6 +8,12 @@ import { useState, useEffect } from "react";
 import { getFirestore, collection, onSnapshot, getDocs, Timestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 
+interface Client {
+    id: string;
+    primerNombre: string;
+    apellido: string;
+}
+
 interface Payment {
   id: string;
   creditId: string;
@@ -23,40 +29,32 @@ export default function CobradosPage() {
 
   useEffect(() => {
     const db = getFirestore(app);
-    const paymentsRef = collection(db, 'payments');
     setLoading(true);
 
-    const unsubscribe = onSnapshot(paymentsRef, async (paymentSnapshot) => {
-        try {
-            const clientsCol = collection(db, 'clients');
-            const clientSnapshot = await getDocs(clientsCol);
-            const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const unsubscribePayments = onSnapshot(collection(db, 'payments'), async (paymentSnapshot) => {
+        const paymentsData = paymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Omit<Payment, 'clientName'>));
 
-            const paymentList = paymentSnapshot.docs.map(doc => {
-                const data = doc.data();
-                const client = clientList.find(c => c.id === data.clientId);
-                return {
-                    id: doc.id,
-                    creditId: data.creditId,
-                    clientId: data.clientId,
-                    clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
-                    amount: data.amount,
-                    paymentDate: data.paymentDate,
-                } as Payment;
-            });
+        const clientsRef = collection(db, 'clients');
+        const clientSnapshot = await getDocs(clientsRef);
+        const clientList = clientSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+        const clientMap = new Map(clientList.map(c => [c.id, c]));
 
-            setPayments(paymentList);
-        } catch (error) {
-            console.error("Error processing snapshot:", error);
-        } finally {
-            setLoading(false);
-        }
+        const enrichedPayments = paymentsData.map(payment => {
+            const client = clientMap.get(payment.clientId);
+            return {
+                ...payment,
+                clientName: client ? `${client.primerNombre} ${client.apellido}`.trim() : 'Cliente Desconocido',
+            };
+        });
+
+        setPayments(enrichedPayments);
+        setLoading(false);
     }, (error) => {
         console.error("Error fetching payments:", error);
         setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribePayments();
   }, []);
 
 

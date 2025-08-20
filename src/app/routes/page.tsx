@@ -54,9 +54,11 @@ export default function RoutesPage() {
             if (userDocSnap.exists()) {
                 const userData = userDocSnap.data() as User;
                 setUserRole(userData.role);
+            } else {
+                setLoading(false); // User profile doesn't exist
             }
         } else {
-            setLoading(false);
+            setLoading(false); // No user logged in
         }
     });
     
@@ -64,7 +66,10 @@ export default function RoutesPage() {
   }, []);
 
   useEffect(() => {
-    if (!userRole || !currentUser) return;
+    if (!userRole || !currentUser) {
+        if (!currentUser) setLoading(false); // Ensure loading is false if there's no user
+        return;
+    }
 
     const db = getFirestore(app);
     const routesRef = collection(db, 'routes');
@@ -98,10 +103,11 @@ export default function RoutesPage() {
         const usersRef = collection(db, 'users');
         const usersSnapshot = await getDocs(usersRef);
         const usersList = usersSnapshot.docs.map(d => ({id: d.id, ...d.data() as User}));
+        const userMap = new Map(usersList.map(u => [u.id, u]));
 
         const routesList = snapshot.docs.map(d => {
           const routeData = d.data();
-          const collector = usersList.find(u => u.id === routeData.collectorId);
+          const collector = userMap.get(routeData.collectorId);
           return {
             id: d.id,
             collectorName: collector?.name || 'Desconocido',
