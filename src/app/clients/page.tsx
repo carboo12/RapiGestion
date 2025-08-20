@@ -19,6 +19,7 @@ import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Plus, User, MapPin, ChevronRight, Search, SlidersHorizontal, Loader2, UserPlus, Eye } from "lucide-react";
+import { logAction } from "@/lib/action-logger";
 
 interface Client {
   id: string;
@@ -279,12 +280,16 @@ export default function ClientsPage() {
       direccionTrabajo: formData.get('direccion-trabajo') as string,
       createdBy: isEditing ? editingClient?.createdBy : user.uid,
     };
+    
+    const fullName = [clientData.primerNombre, clientData.segundoNombre, clientData.apellido, clientData.segundoApellido].filter(Boolean).join(' ');
+
 
     try {
       const db = getFirestore(app);
       if (isEditing && editingClient) {
         const clientRef = doc(db, "clients", editingClient.id);
         await setDoc(clientRef, clientData, { merge: true });
+        await logAction('ACTUALIZAR CLIENTE', `Cliente: ${fullName}`, user.uid);
         
         toast({
           title: "Éxito",
@@ -292,8 +297,8 @@ export default function ClientsPage() {
         });
 
       } else {
-        const newClientData = { ...clientData };
-        await addDoc(collection(db, "clients"), newClientData);
+        const docRef = await addDoc(collection(db, "clients"), clientData);
+        await logAction('CREAR CLIENTE', `Cliente: ${fullName} (ID: ${docRef.id})`, user.uid);
         toast({
           title: "Éxito",
           description: "Cliente agregado correctamente.",

@@ -18,6 +18,7 @@ import { ArrowLeft, Calculator, Loader2, Save, ShieldAlert } from 'lucide-react'
 import { getAuth } from 'firebase/auth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { logAction } from '@/lib/action-logger';
 
 const creditSchema = z.object({
   amount: z.coerce.number().min(1, 'El monto debe ser mayor a 0'),
@@ -163,6 +164,8 @@ export default function NewCreditPage() {
         };
 
         const docRef = await addDoc(collection(db, 'credits'), creditData);
+        await logAction('CREAR CRÉDITO', `Monto: ${formatCurrency(creditData.amount)} para cliente ${selectedClient.name}`, gestor.uid);
+        
         toast({ title: 'Éxito', description: 'Crédito creado correctamente.' });
         localStorage.removeItem('selectedClient');
         router.push(`/credits/${docRef.id}`);

@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { getAuth } from 'firebase/auth';
+import { logAction } from '@/lib/action-logger';
 
 interface Client {
   id: string;
@@ -136,7 +138,13 @@ export default function ClientDetailPage() {
     
     try {
         const db = getFirestore(app);
-        await addDoc(collection(db, 'references'), refData);
+        const docRef = await addDoc(collection(db, 'references'), refData);
+        
+        const auth = getAuth(app);
+        if (auth.currentUser) {
+            await logAction('CREAR REFERENCIA', `Ref: ${refData.name} para cliente ${fullName}`, auth.currentUser.uid);
+        }
+
         toast({ title: "Éxito", description: "Referencia agregada correctamente." });
         setIsRefDialogOpen(false);
     } catch (error) {
@@ -161,6 +169,12 @@ export default function ClientDetailPage() {
         const db = getFirestore(app);
         const refDoc = doc(db, 'references', editingReference.id);
         await setDoc(refDoc, updatedData, { merge: true });
+
+        const auth = getAuth(app);
+        if (auth.currentUser) {
+            await logAction('ACTUALIZAR REFERENCIA', `Ref: ${updatedData.name} para cliente ${fullName}`, auth.currentUser.uid);
+        }
+        
         toast({ title: "Éxito", description: "Referencia actualizada correctamente." });
         setIsEditRefDialogOpen(false);
         setEditingReference(null);
@@ -185,7 +199,13 @@ export default function ClientDetailPage() {
 
     try {
         const db = getFirestore(app);
-        await addDoc(collection(db, 'guarantees'), guaranteeData);
+        const docRef = await addDoc(collection(db, 'guarantees'), guaranteeData);
+        
+        const auth = getAuth(app);
+        if (auth.currentUser) {
+            await logAction('CREAR GARANTIA', `Garantía: ${guaranteeData.articulo} - ${guaranteeData.marca} para cliente ${fullName}`, auth.currentUser.uid);
+        }
+        
         toast({ title: "Éxito", description: "Garantía agregada correctamente." });
         setIsGuaranteeDialogOpen(false);
     } catch (error) {

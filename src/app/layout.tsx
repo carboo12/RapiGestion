@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
+import { logAction } from '@/lib/action-logger';
 
 
 interface Notification {
@@ -60,29 +61,32 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
 
-  const handleSignOut = useCallback(() => {
+  const handleSignOut = useCallback(async () => {
     const auth = getAuth(app);
     const db = getFirestore(app);
-    if(auth.currentUser){
-      const userDocRef = doc(db, "users", auth.currentUser.uid);
-      updateDoc(userDocRef, { status: 'offline', lastSeen: serverTimestamp() });
-    }
-    signOut(auth)
-      .then(() => {
+    const currentUser = auth.currentUser;
+
+    if(!currentUser) return;
+    
+    try {
+        await logAction('CIERRE DE SESIÓN', `El usuario ${currentUser.email} cerró sesión`, currentUser.uid);
+        await updateDoc(doc(db, "users", currentUser.uid), { status: 'offline', lastSeen: serverTimestamp() });
+        
+        await signOut(auth);
+
         toast({
-          title: "Sesión cerrada",
-          description: "Has cerrado sesión correctamente.",
+            title: "Sesión cerrada",
+            description: "Has cerrado sesión correctamente.",
         });
         router.push('/login');
-      })
-      .catch((error) => {
+    } catch (error) {
         console.error("Error al cerrar sesión: ", error);
         toast({
-          title: "Error",
-          description: "No se pudo cerrar la sesión.",
-          variant: "destructive",
-        })
-      });
+            title: "Error",
+            description: "No se pudo cerrar la sesión.",
+            variant: "destructive",
+        });
+    }
   }, [router, toast]);
 
 
@@ -155,14 +159,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       clearTimeout(activityTimer);
       activityTimer = setTimeout(() => {
           if (auth.currentUser) {
-            updateDoc(doc(db, "users", auth.currentUser.uid), { status: 'offline', lastSeen: serverTimestamp() });
-            signOut(auth).then(() => {
-                toast({
-                    title: "Sesión cerrada por inactividad",
-                    description: "Tu sesión ha sido cerrada automáticamente.",
-                });
-                router.push('/login');
-            });
+            handleSignOut();
           }
       }, 30 * 60 * 1000); // 30 minutos
     };
@@ -177,7 +174,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [user, router, toast]);
+  }, [user, router, toast, handleSignOut]);
 
   const handleNotificationClick = async (notification: Notification) => {
       const db = getFirestore(app);

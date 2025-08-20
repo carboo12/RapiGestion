@@ -16,7 +16,7 @@ import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { app } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-
+import { logAction } from "@/lib/action-logger";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -36,7 +36,8 @@ export default function LoginPage() {
     
     const auth = getAuth(app);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await logAction('INICIO DE SESIÓN', `El usuario ${email} inició sesión`, userCredential.user.uid);
       router.push('/dashboard');
     } catch (error) {
       console.error("Authentication error: ", error);

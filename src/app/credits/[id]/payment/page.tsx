@@ -10,6 +10,7 @@ import Loading from '@/app/loading';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { getAuth } from 'firebase/auth';
+import { logAction } from '@/lib/action-logger';
 
 interface Client {
   id: string;
@@ -145,6 +146,8 @@ export default function PaymentPage() {
     const creditRef = doc(db, 'credits', credit.id);
     const updatedBalance = credit.balance - amount;
     const updatedStatus = updatedBalance <= 0 ? 'Pagado' : credit.status;
+    const clientFullName = `${client.primerNombre} ${client.apellido}`.trim();
+
 
     try {
         await updateDoc(creditRef, {
@@ -161,11 +164,12 @@ export default function PaymentPage() {
           gestorName: gestor.displayName || gestor.email,
         });
 
+        await logAction('APLICAR ABONO', `Abono de ${formatCurrency(amount)} para ${clientFullName} (Crédito: ${credit.id.substring(0,5)})`, gestor.uid);
+        
         // Notify Admins
         const usersRef = collection(db, 'users');
         const qAdmins = query(usersRef, where("role", "==", "Administrador"));
         const adminSnapshot = await getDocs(qAdmins);
-        const clientFullName = `${client.primerNombre} ${client.apellido}`.trim();
 
         for (const adminDoc of adminSnapshot.docs) {
             const adminId = adminDoc.id;
