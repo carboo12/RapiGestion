@@ -195,9 +195,9 @@ export default function PaymentsListPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input name="clientName" value={filters.clientName} onChange={handleFilterChange} placeholder="Buscar por nombre de cliente..." className="pl-10" />
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
                     <Input name="startDate" type="date" value={filters.startDate} onChange={handleFilterChange} />
-                    <span className="text-muted-foreground">-</span>
+                    <span className="text-muted-foreground hidden sm:inline">-</span>
                     <Input name="endDate" type="date" value={filters.endDate} onChange={handleFilterChange}/>
                 </div>
             </div>
@@ -219,40 +219,42 @@ export default function PaymentsListPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Monto</TableHead>
-                  <TableHead>Fecha de Pago</TableHead>
-                  <TableHead>Gestor</TableHead>
-                  <TableHead>Recibo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPayments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium">
-                        {payment.clientName}
-                    </TableCell>
-                     <TableCell>
-                      <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
-                        {formatCurrency(payment.amount)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatTimestamp(payment.paymentDate)}</TableCell>
-                    <TableCell>{payment.gestorName || 'No disponible'}</TableCell>
-                     <TableCell>
-                        <Button asChild variant="ghost" size="icon">
-                            <Link href={`/payments/${payment.id}`}>
-                                <Eye className="h-4 w-4" />
-                            </Link>
-                        </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="w-full overflow-x-auto">
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Monto</TableHead>
+                    <TableHead>Fecha de Pago</TableHead>
+                    <TableHead>Gestor</TableHead>
+                    <TableHead>Recibo</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {filteredPayments.map((payment) => (
+                    <TableRow key={payment.id}>
+                        <TableCell className="font-medium">
+                            {payment.clientName}
+                        </TableCell>
+                        <TableCell>
+                        <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
+                            {formatCurrency(payment.amount)}
+                        </Badge>
+                        </TableCell>
+                        <TableCell>{formatTimestamp(payment.paymentDate)}</TableCell>
+                        <TableCell>{payment.gestorName || 'No disponible'}</TableCell>
+                        <TableCell>
+                            <Button asChild variant="ghost" size="icon">
+                                <Link href={`/payments/${payment.id}`}>
+                                    <Eye className="h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </div>
           )}
         </CardContent>
       </Card>
