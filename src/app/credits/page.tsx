@@ -1,7 +1,7 @@
 'use client';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { getFirestore, collection, onSnapshot, getDocs, Timestamp, query, where } from "firebase/firestore"
+import { getFirestore, collection, onSnapshot, getDocs, Timestamp, query, where, doc, getDoc } from "firebase/firestore"
 import { app } from "@/lib/firebase"
 import { useToast } from "@/hooks/use-toast"
 import { useState, useEffect } from "react"
