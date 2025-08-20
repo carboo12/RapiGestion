@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Table,
@@ -38,8 +39,7 @@ const getActionBadgeClass = (action: string) => {
   if (action.includes('ACTUALIZAR')) return 'bg-amber-100 text-amber-800';
   if (action.includes('INICIO DE SESIÓN')) return 'bg-slate-100 text-slate-800';
   if (action.includes('CIERRE DE SESIÓN')) return 'bg-slate-100 text-slate-800';
-  if (action.includes('PAGO')) return 'bg-emerald-100 text-emerald-800';
-  if (action.includes('ABONO')) return 'bg-emerald-100 text-emerald-800';
+  if (action.includes('APLICAR ABONO')) return 'bg-emerald-100 text-emerald-800';
   return 'bg-gray-100 text-gray-800';
 }
 
